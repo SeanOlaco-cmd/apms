@@ -22,7 +22,11 @@ class AchievementController extends Controller
             'type' => 'required|in:research,publication,award,certification,training,other',
         ]);
 
-        $data = FacultyAchievement::create($request->all());
+        $data = FacultyAchievement::create([
+            ...$request->all(),
+            'submitted_by' => $request->user()->id,
+            'status' => 'approved',
+        ]);
         return response()->json($data, 201);
     }
 

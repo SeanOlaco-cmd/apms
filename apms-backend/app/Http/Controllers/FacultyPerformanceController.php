@@ -26,7 +26,11 @@ class FacultyPerformanceController extends Controller
             'with_board_license' => 'required|integer',
         ]);
 
-        $data = FacultyPerformance::create($request->all());
+        $data = FacultyPerformance::create([
+            ...$request->all(),
+            'submitted_by' => $request->user()->id,
+            'status' => 'approved',
+        ]);
         return response()->json($data, 201);
     }
 

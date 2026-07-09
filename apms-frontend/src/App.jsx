@@ -3,7 +3,6 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import DashboardLayout from './layouts/DashboardLayout'
 import DHLayout from './layouts/DHLayout'
-import DeanLayout from './layouts/DeanLayout'
 import DHDashboard from './pages/dh/DHDashboard'
 import DHEnrollment from './pages/dh/DHEnrollment'
 import DHRecruitment from './pages/dh/DHRecruitment'
@@ -14,8 +13,6 @@ import DHAchievements from './pages/dh/DHAchievements'
 import DHAccreditation from './pages/dh/DHAccreditation'
 import DHPartnerships from './pages/dh/DHPartnerships'
 import DHStudentPerformance from './pages/dh/DHStudentPerformance'
-import DeanDashboard from './pages/dean/DeanDashboard'
-import DeanEnrollment from './pages/dean/DeanEnrollment'
 import Enrollment from './pages/Enrollment'
 import Recruitment from './pages/Recruitment'
 import Retention from './pages/Retention'
@@ -44,12 +41,6 @@ function App() {
         <Route path="accreditation" element={<Accreditation />} />
         <Route path="partnerships" element={<Partnerships />} />
         <Route path="student-performance" element={<StudentPerformance />} />
-      </Route>
-
-      {/* Dean Routes */}
-      <Route path="/dean" element={<DeanLayout />}>
-        <Route path="dashboard" element={<DeanDashboard />} />
-        <Route path="enrollment" element={<DeanEnrollment />} />
       </Route>
 
       {/* Department Head Routes */}

@@ -21,7 +21,10 @@ class PartnershipController extends Controller
             'status' => 'required|in:active,expired,pending',
         ]);
 
-        $data = CorporatePartnership::create($request->all());
+        $data = CorporatePartnership::create([
+            ...$request->all(),
+            'submitted_by' => $request->user()->id,
+        ]);
         return response()->json($data, 201);
     }
 

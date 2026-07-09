@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class AccreditationStatus extends Model
 {
+    protected $table = 'accreditation_status';
+
     protected $fillable = [
         'school_id',
         'program_id',
@@ -15,6 +17,10 @@ class AccreditationStatus extends Model
         'expiry_date',
         'status',
         'notes',
+        'rejection_reason',
+        'submitted_by',
+        'approved_by',
+        'approved_at',
     ];
 
     public function school()

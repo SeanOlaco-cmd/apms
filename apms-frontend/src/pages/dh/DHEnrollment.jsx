@@ -22,7 +22,7 @@ export default function DHEnrollment() {
   useEffect(() => {
     api.get("/academic-periods").then((res) => setPeriods(res.data));
     api.get("/enrollment").then((res) => {
-      const mine = res.data.filter(d => d.submitted_by === user.id);
+      const mine = res.data.filter(d => d.school_id == user.school_id && d.program_id == user.program_id);
       setSubmissions(mine);
     });
   }, []);
@@ -53,7 +53,7 @@ export default function DHEnrollment() {
         notes: "",
       });
       const res = await api.get("/enrollment");
-      const mine = res.data.filter(d => d.submitted_by == user.id);
+      const mine = res.data.filter(d => d.school_id == user.school_id && d.program_id == user.program_id);
       setSubmissions(mine);
     } catch {
       setError("Failed to submit. Please check all fields.");

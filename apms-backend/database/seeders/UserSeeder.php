@@ -21,28 +21,6 @@ class UserSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // Deans
-        $deans = [
-            ['name' => 'Dean of SCS', 'email' => 'dean.scs@cct.edu.ph', 'password' => 'cct@scs2026', 'school_id' => 1],
-            ['name' => 'Dean of SED', 'email' => 'dean.sed@cct.edu.ph', 'password' => 'cct@sed2026', 'school_id' => 2],
-            ['name' => 'Dean of SHTM', 'email' => 'dean.shtm@cct.edu.ph', 'password' => 'cct@shtm2026', 'school_id' => 3],
-            ['name' => 'Dean of SAS', 'email' => 'dean.sas@cct.edu.ph', 'password' => 'cct@sas2026', 'school_id' => 4],
-            ['name' => 'Dean of SPES', 'email' => 'dean.spes@cct.edu.ph', 'password' => 'cct@spes2026', 'school_id' => 5],
-            ['name' => 'Dean of SBM', 'email' => 'dean.sbm@cct.edu.ph', 'password' => 'cct@sbm2026', 'school_id' => 6],
-        ];
-
-        foreach ($deans as $dean) {
-            User::create([
-                'name' => $dean['name'],
-                'email' => $dean['email'],
-                'password' => Hash::make($dean['password']),
-                'role' => 'dean',
-                'school_id' => $dean['school_id'],
-                'program_id' => null,
-                'is_active' => true,
-            ]);
-        }
-
         // Department Heads
         $deptHeads = [
             // SCS

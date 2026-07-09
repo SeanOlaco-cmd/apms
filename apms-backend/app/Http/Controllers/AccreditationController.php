@@ -22,7 +22,10 @@ class AccreditationController extends Controller
             'status' => 'required|in:active,expired,pending,suspended',
         ]);
 
-        $data = AccreditationStatus::create($request->all());
+        $data = AccreditationStatus::create([
+            ...$request->all(),
+            'submitted_by' => $request->user()->id,
+        ]);
         return response()->json($data, 201);
     }
 

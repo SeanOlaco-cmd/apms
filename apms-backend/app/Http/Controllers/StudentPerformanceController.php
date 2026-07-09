@@ -28,7 +28,11 @@ class StudentPerformanceController extends Controller
             'latin_honors' => 'required|integer',
         ]);
 
-        $data = StudentPerformance::create($request->all());
+        $data = StudentPerformance::create([
+            ...$request->all(),
+            'submitted_by' => $request->user()->id,
+            'status' => 'approved',
+        ]);
         return response()->json($data, 201);
     }
 

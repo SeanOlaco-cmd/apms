@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class FacultyPerformance extends Model
 {
+    protected $table = 'faculty_performance';
+
     protected $fillable = [
         'school_id',
         'academic_period_id',
@@ -17,6 +19,11 @@ class FacultyPerformance extends Model
         'with_doctorate',
         'with_board_license',
         'notes',
+        'status',
+        'rejection_reason',
+        'submitted_by',
+        'approved_by',
+        'approved_at',
     ];
 
     public function school()

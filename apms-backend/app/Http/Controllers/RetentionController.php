@@ -25,7 +25,11 @@ class RetentionController extends Controller
             'graduated_students' => 'required|integer',
         ]);
 
-        $data = RetentionRate::create($request->all());
+        $data = RetentionRate::create([
+            ...$request->all(),
+            'submitted_by' => $request->user()->id,
+            'status' => 'approved',
+        ]);
         return response()->json($data, 201);
     }
 

@@ -15,17 +15,21 @@ class RecruitmentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'school_id' => 'required|exists:schools,id',
-            'academic_period_id' => 'required|exists:academic_periods,id',
-            'applicants' => 'required|integer',
-            'accepted' => 'required|integer',
-            'enrolled' => 'required|integer',
-            'walk_in' => 'required|integer',
-            'online' => 'required|integer',
-            'referrals' => 'required|integer',
-        ]);
+        'school_id' => 'required|exists:schools,id',
+        'academic_period_id' => 'required|exists:academic_periods,id',
+        'applicants' => 'required|integer',
+        'accepted' => 'required|integer',
+        'enrolled' => 'required|integer',
+        'walk_in' => 'required|integer',
+        'online' => 'required|integer',
+        'referrals' => 'required|integer',
+    ]);
 
-        $data = RecruitmentData::create($request->all());
+    $data = RecruitmentData::create([
+        ...$request->all(),
+        'submitted_by' => $request->user()->id,
+        'status' => 'approved',
+    ]);
         return response()->json($data, 201);
     }
 

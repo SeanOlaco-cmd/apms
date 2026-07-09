@@ -23,7 +23,11 @@ class WorkforceController extends Controller
             'urgency' => 'required|in:low,medium,high',
         ]);
 
-        $data = WorkforceNeed::create($request->all());
+        $data = WorkforceNeed::create([
+            ...$request->all(),
+            'submitted_by' => $request->user()->id,
+            'status' => 'approved',
+        ]);
         return response()->json($data, 201);
     }
 
