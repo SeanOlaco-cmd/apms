@@ -8,19 +8,13 @@ import DHEnrollment from './pages/dh/DHEnrollment'
 import DHRecruitment from './pages/dh/DHRecruitment'
 import DHRetention from './pages/dh/DHRetention'
 import DHFacultyPerformance from './pages/dh/DHFacultyPerformance'
-import DHWorkforce from './pages/dh/DHWorkforce'
 import DHAchievements from './pages/dh/DHAchievements'
-import DHAccreditation from './pages/dh/DHAccreditation'
-import DHPartnerships from './pages/dh/DHPartnerships'
 import DHStudentPerformance from './pages/dh/DHStudentPerformance'
 import Enrollment from './pages/Enrollment'
 import Recruitment from './pages/Recruitment'
 import Retention from './pages/Retention'
 import FacultyPerformance from './pages/FacultyPerformance'
-import WorkforceNeeds from './pages/WorkforceNeeds'
 import Achievements from './pages/Achievements'
-import Accreditation from './pages/Accreditation'
-import Partnerships from './pages/Partnerships'
 import StudentPerformance from './pages/StudentPerformance'
 
 function App() {
@@ -36,10 +30,7 @@ function App() {
         <Route path="recruitment" element={<Recruitment />} />
         <Route path="retention" element={<Retention />} />
         <Route path="faculty-performance" element={<FacultyPerformance />} />
-        <Route path="workforce" element={<WorkforceNeeds />} />
         <Route path="achievements" element={<Achievements />} />
-        <Route path="accreditation" element={<Accreditation />} />
-        <Route path="partnerships" element={<Partnerships />} />
         <Route path="student-performance" element={<StudentPerformance />} />
       </Route>
 
@@ -50,10 +41,7 @@ function App() {
         <Route path="recruitment" element={<DHRecruitment />} />
         <Route path="retention" element={<DHRetention />} />
         <Route path="faculty-performance" element={<DHFacultyPerformance />} />
-        <Route path="workforce" element={<DHWorkforce />} />
         <Route path="achievements" element={<DHAchievements />} />
-        <Route path="accreditation" element={<DHAccreditation />} />
-        <Route path="partnerships" element={<DHPartnerships />} />
         <Route path="student-performance" element={<DHStudentPerformance />} />
       </Route>
     </Routes>
