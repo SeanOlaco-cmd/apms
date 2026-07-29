@@ -36,8 +36,8 @@ export default function Sidebar() {
 
       {/* User Info */}
       <div className="p-4 border-b border-[#5e0d0f]">
-        <p className="text-white font-semibold text-sm">{user?.name}</p>
-        <p className="text-red-300 text-xs capitalize">{user?.role}</p>
+        <p className="text-white font-semibold text-sm">Academic Performance</p>
+        <p className="text-red-300 text-xs">Monitoring System</p>
       </div>
 
       {/* Nav Items */}

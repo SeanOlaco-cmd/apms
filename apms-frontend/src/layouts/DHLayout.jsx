@@ -35,8 +35,8 @@ export default function DHLayout() {
           <p className="text-red-200 text-xs mt-1">City College of Tagaytay</p>
         </div>
         <div className="p-4 border-b border-[#5e0d0f]">
-          <p className="text-white font-semibold text-sm">{user?.name}</p>
-          <p className="text-red-300 text-xs">Department Head</p>
+          <p className="text-white font-semibold text-sm">Academic Performance</p>
+          <p className="text-red-300 text-xs">Monitoring System</p>
         </div>
         <nav className="flex-1 p-3 flex flex-col gap-1">
           {navItems.map((item) => (

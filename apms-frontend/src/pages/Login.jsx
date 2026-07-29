@@ -36,13 +36,10 @@ if (role === "president") {
     <div className="min-h-screen bg-[#7b1113] flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#7b1113]">APMS</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Academic Performance Monitoring System
-          </p>
-          <p className="text-gray-400 text-xs mt-1">
-            City College of Tagaytay
-          </p>
+          <h1 className="text-xl font-bold text-[#7b1113]">Academic Performance Monitoring System</h1>
+            <p className="text-gray-500 text-sm mt-1">
+             City College of Tagaytay
+            </p>
         </div>
 
         {error && (
