@@ -4,13 +4,9 @@ import api from "../api/axios";
 const navItems = [
   { label: "Overview", icon: "📊", path: "/dashboard" },
   { label: "Enrollment", icon: "📋", path: "/dashboard/enrollment" },
-  { label: "Recruitment", icon: "🎯", path: "/dashboard/recruitment" },
   { label: "Retention", icon: "📈", path: "/dashboard/retention" },
   { label: "Faculty Performance", icon: "👨‍🏫", path: "/dashboard/faculty-performance" },
-  { label: "Workforce Needs", icon: "👥", path: "/dashboard/workforce" },
   { label: "Achievements", icon: "🏆", path: "/dashboard/achievements" },
-  { label: "Accreditation", icon: "📜", path: "/dashboard/accreditation" },
-  { label: "Partnerships", icon: "🤝", path: "/dashboard/partnerships" },
   { label: "Student Performance", icon: "🎓", path: "/dashboard/student-performance" },
 ];
 

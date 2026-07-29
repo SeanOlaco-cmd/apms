@@ -5,13 +5,11 @@ import DashboardLayout from './layouts/DashboardLayout'
 import DHLayout from './layouts/DHLayout'
 import DHDashboard from './pages/dh/DHDashboard'
 import DHEnrollment from './pages/dh/DHEnrollment'
-import DHRecruitment from './pages/dh/DHRecruitment'
 import DHRetention from './pages/dh/DHRetention'
 import DHFacultyPerformance from './pages/dh/DHFacultyPerformance'
 import DHAchievements from './pages/dh/DHAchievements'
 import DHStudentPerformance from './pages/dh/DHStudentPerformance'
 import Enrollment from './pages/Enrollment'
-import Recruitment from './pages/Recruitment'
 import Retention from './pages/Retention'
 import FacultyPerformance from './pages/FacultyPerformance'
 import Achievements from './pages/Achievements'
@@ -27,7 +25,6 @@ function App() {
       <Route path="/dashboard" element={<DashboardLayout title="Overview" />}>
         <Route index element={<Dashboard />} />
         <Route path="enrollment" element={<Enrollment />} />
-        <Route path="recruitment" element={<Recruitment />} />
         <Route path="retention" element={<Retention />} />
         <Route path="faculty-performance" element={<FacultyPerformance />} />
         <Route path="achievements" element={<Achievements />} />
@@ -38,7 +35,6 @@ function App() {
       <Route path="/dh" element={<DHLayout />}>
         <Route path="dashboard" element={<DHDashboard />} />
         <Route path="enrollment" element={<DHEnrollment />} />
-        <Route path="recruitment" element={<DHRecruitment />} />
         <Route path="retention" element={<DHRetention />} />
         <Route path="faculty-performance" element={<DHFacultyPerformance />} />
         <Route path="achievements" element={<DHAchievements />} />
