@@ -17,6 +17,9 @@ import Retention from './pages/Retention'
 import FacultyPerformance from './pages/FacultyPerformance'
 import Achievements from './pages/Achievements'
 import StudentPerformance from './pages/StudentPerformance'
+import BoardExam from './pages/BoardExam'
+import ClassMonitoring from './pages/ClassMonitoring'
+import ShifteeTransferee from './pages/ShifteeTransferee'
 
 function App() {
   return (
@@ -29,8 +32,11 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="enrollment" element={<Enrollment />} />
         <Route path="retention" element={<Retention />} />
+        <Route path="shiftee-transferee" element={<ShifteeTransferee />} />
         <Route path="faculty-performance" element={<FacultyPerformance />} />
         <Route path="achievements" element={<Achievements />} />
+        <Route path="board-exam" element={<BoardExam />} />
+        <Route path="class-monitoring" element={<ClassMonitoring />} />
         <Route path="student-performance" element={<StudentPerformance />} />
       </Route>
 

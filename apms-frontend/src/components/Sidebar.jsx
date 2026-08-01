@@ -5,8 +5,11 @@ const navItems = [
   { label: "Overview", icon: "📊", path: "/dashboard" },
   { label: "Enrollment", icon: "📋", path: "/dashboard/enrollment" },
   { label: "Retention", icon: "📈", path: "/dashboard/retention" },
+  { label: "Shiftee & Transferee", icon: "🔄", path: "/dashboard/shiftee-transferee" },
   { label: "Faculty Performance", icon: "👨‍🏫", path: "/dashboard/faculty-performance" },
   { label: "Achievements", icon: "🏆", path: "/dashboard/achievements" },
+  { label: "Board Exam Results", icon: "📝", path: "/dashboard/board-exam" },
+  { label: "Class Monitoring", icon: "📓", path: "/dashboard/class-monitoring" },
   { label: "Student Performance", icon: "🎓", path: "/dashboard/student-performance" },
 ];
 
@@ -30,7 +33,7 @@ export default function Sidebar() {
         <p className="text-red-200 text-xs mt-1">City College of Tagaytay</p>
       </div>
 
-      {/* User Info */}
+      {/* System Name */}
       <div className="p-4 border-b border-[#5e0d0f]">
         <p className="text-white font-semibold text-sm">Academic Performance</p>
         <p className="text-red-300 text-xs">Monitoring System</p>
