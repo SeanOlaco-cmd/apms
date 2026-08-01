@@ -9,6 +9,9 @@ import DHRetention from './pages/dh/DHRetention'
 import DHFacultyPerformance from './pages/dh/DHFacultyPerformance'
 import DHAchievements from './pages/dh/DHAchievements'
 import DHStudentPerformance from './pages/dh/DHStudentPerformance'
+import DHBoardExam from './pages/dh/DHBoardExam'
+import DHClassMonitoring from './pages/dh/DHClassMonitoring'
+import DHShifteeTransferee from './pages/dh/DHShifteeTransferee'
 import Enrollment from './pages/Enrollment'
 import Retention from './pages/Retention'
 import FacultyPerformance from './pages/FacultyPerformance'
@@ -36,8 +39,11 @@ function App() {
         <Route path="dashboard" element={<DHDashboard />} />
         <Route path="enrollment" element={<DHEnrollment />} />
         <Route path="retention" element={<DHRetention />} />
+        <Route path="shiftee-transferee" element={<DHShifteeTransferee />} />
         <Route path="faculty-performance" element={<DHFacultyPerformance />} />
         <Route path="achievements" element={<DHAchievements />} />
+        <Route path="board-exam" element={<DHBoardExam />} />
+        <Route path="class-monitoring" element={<DHClassMonitoring />} />
         <Route path="student-performance" element={<DHStudentPerformance />} />
       </Route>
     </Routes>
