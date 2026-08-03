@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class StudentPerformance extends Model
 {
+    protected $table = 'student_performance';
+
     protected $fillable = [
         'school_id',
         'program_id',
         'academic_period_id',
+        'submitted_by',
         'total_students',
         'passing',
         'failing',
@@ -19,6 +22,11 @@ class StudentPerformance extends Model
         'average_gwa',
         'latin_honors',
         'notes',
+        'status',
+        'rejection_reason',
+        'submitted_by',
+        'approved_by',
+        'approved_at',
     ];
 
     public function school()

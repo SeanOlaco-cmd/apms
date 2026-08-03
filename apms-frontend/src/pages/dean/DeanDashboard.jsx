@@ -28,16 +28,16 @@ export default function DeanDashboard() {
 
   const loadStats = async (schoolId) => {
     try {
-      const [enrollment, recruitment, retention] = await Promise.all([
+      const [enrollment, retention, studentPerformance] = await Promise.all([
         api.get("/enrollment"),
-        api.get("/recruitment"),
         api.get("/retention"),
+        api.get("/student-performance"),
       ]);
 
       const allData = [
         ...enrollment.data.filter(d => d.school_id == schoolId),
-        ...recruitment.data.filter(d => d.school_id == schoolId),
         ...retention.data.filter(d => d.school_id == schoolId),
+        ...studentPerformance.data.filter(d => d.school_id == schoolId),
       ];
 
       setStats({
