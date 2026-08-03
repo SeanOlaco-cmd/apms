@@ -22,6 +22,8 @@ localStorage.setItem("user", JSON.stringify(res.data.user));
 const role = res.data.user.role;
 if (role === "president") {
   navigate("/dashboard");
+} else if (role === "dean") {
+  navigate("/dean/dashboard");
 } else if (role === "department_head") {
   navigate("/dh/dashboard");
 }

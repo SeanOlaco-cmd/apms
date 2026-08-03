@@ -29,7 +29,7 @@ class BoardExamResultController extends Controller
         $data = BoardExamResult::create([
             ...$request->all(),
             'submitted_by' => $request->user()->id,
-            'status' => 'approved',
+            'status' => 'pending',
         ]);
         return response()->json($data, 201);
     }

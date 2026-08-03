@@ -4,13 +4,11 @@ import api from "../api/axios";
 const navItems = [
   { label: "Dashboard", icon: "📊", path: "/dean/dashboard" },
   { label: "Enrollment", icon: "📋", path: "/dean/enrollment" },
-  { label: "Recruitment", icon: "🎯", path: "/dean/recruitment" },
   { label: "Retention", icon: "📈", path: "/dean/retention" },
+  { label: "Shiftee & Transferee", icon: "🔄", path: "/dean/shiftee-transferee" },
   { label: "Faculty Performance", icon: "👨‍🏫", path: "/dean/faculty-performance" },
-  { label: "Workforce Needs", icon: "👥", path: "/dean/workforce" },
   { label: "Achievements", icon: "🏆", path: "/dean/achievements" },
-  { label: "Accreditation", icon: "📜", path: "/dean/accreditation" },
-  { label: "Partnerships", icon: "🤝", path: "/dean/partnerships" },
+  { label: "Board Exam Results", icon: "📝", path: "/dean/board-exam" },
   { label: "Student Performance", icon: "🎓", path: "/dean/student-performance" },
 ];
 
@@ -34,8 +32,8 @@ export default function DeanLayout() {
           <p className="text-red-200 text-xs mt-1">City College of Tagaytay</p>
         </div>
         <div className="p-4 border-b border-[#5e0d0f]">
-          <p className="text-white font-semibold text-sm">{user?.name}</p>
-          <p className="text-red-300 text-xs">Dean</p>
+          <p className="text-white font-semibold text-sm">Academic Performance</p>
+          <p className="text-red-300 text-xs">Monitoring System</p>
         </div>
         <nav className="flex-1 p-3 flex flex-col gap-1">
           {navItems.map((item) => (

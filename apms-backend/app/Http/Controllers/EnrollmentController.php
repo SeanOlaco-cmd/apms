@@ -28,7 +28,7 @@ class EnrollmentController extends Controller
         $data = EnrollmentData::create([
              ...$request->all(),
              'submitted_by' => $request->user()->id,
-             'status' => 'approved',
+             'status' => 'pending',
         ]);
 
         return response()->json($data, 201);

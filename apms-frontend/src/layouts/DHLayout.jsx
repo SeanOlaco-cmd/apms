@@ -2,16 +2,15 @@ import { Outlet, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 const navItems = [
-    { label: "Dashboard", icon: "📊", path: "/dh/dashboard" },
-    { label: "Enrollment", icon: "📋", path: "/dh/enrollment" },
-    { label: "Retention", icon: "📈", path: "/dh/retention" },
-    { label: "Shiftee & Transferee", icon: "🔄", path: "/dh/shiftee-transferee" },
-    { label: "Faculty Performance", icon: "👨‍🏫", path: "/dh/faculty-performance" },
-    { label: "Achievements", icon: "🏆", path: "/dh/achievements" },
-    { label: "Board Exam Results", icon: "📝", path: "/dh/board-exam" },
-    { label: "Class Monitoring", icon: "📓", path: "/dh/class-monitoring" },
-    { label: "Student Performance", icon: "🎓", path: "/dh/student-performance" },
-  ];
+  { label: "Dashboard", icon: "📊", path: "/dh/dashboard" },
+  { label: "Enrollment", icon: "📋", path: "/dh/enrollment" },
+  { label: "Retention", icon: "📈", path: "/dh/retention" },
+  { label: "Shiftee & Transferee", icon: "🔄", path: "/dh/shiftee-transferee" },
+  { label: "Faculty Performance", icon: "👨‍🏫", path: "/dh/faculty-performance" },
+  { label: "Achievements", icon: "🏆", path: "/dh/achievements" },
+  { label: "Board Exam Results", icon: "📝", path: "/dh/board-exam" },
+  { label: "Student Performance", icon: "🎓", path: "/dh/student-performance" },
+];
 
 export default function DHLayout() {
   const navigate = useNavigate();
