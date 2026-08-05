@@ -11,6 +11,8 @@ use App\Http\Controllers\FacultyPerformanceController;
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\StudentPerformanceController;
 use App\Http\Controllers\AcademicPeriodController;
+use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\ProgramController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -29,4 +31,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('achievements', AchievementController::class);
     Route::apiResource('student-performance', StudentPerformanceController::class);
     Route::apiResource('academic-periods', AcademicPeriodController::class);
+    Route::apiResource('schools', SchoolController::class);
+    Route::apiResource('programs', ProgramController::class);
 });

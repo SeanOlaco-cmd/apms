@@ -43,6 +43,39 @@ class UserSeeder extends Seeder
             ]);
         }
 
+        // VPAA
+    User::create([
+        'name' => 'Vice President Academic Affairs',
+        'email' => 'vpaa@cct.edu.ph',
+        'password' => Hash::make('cct@vpaa2026'),
+        'role' => 'vpaa',
+        'school_id' => null,
+        'program_id' => null,
+        'is_active' => true,
+    ]);
+
+    // NSTP Head
+    User::create([
+        'name' => 'NSTP Head',
+        'email' => 'nstp@cct.edu.ph',
+        'password' => Hash::make('cct@nstp2026'),
+        'role' => 'nstp_head',
+        'school_id' => null,
+        'program_id' => null,
+        'is_active' => true,
+    ]);
+
+    // System Admin
+    User::create([
+        'name' => 'System Administrator',
+        'email' => 'sysadmin@cct.edu.ph',
+        'password' => Hash::make('cct@sysadmin2026'),
+        'role' => 'system_admin',
+        'school_id' => null,
+        'program_id' => null,
+        'is_active' => true,
+    ]);
+
         // Department Heads
         $deptHeads = [
             ['name' => 'DH - BSCS', 'email' => 'dh.bscs@cct.edu.ph', 'password' => 'cct@bscs2026', 'school_id' => 1, 'program_id' => 1],
