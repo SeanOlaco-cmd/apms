@@ -13,6 +13,7 @@ use App\Http\Controllers\StudentPerformanceController;
 use App\Http\Controllers\AcademicPeriodController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\NstpReportController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -33,4 +34,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('academic-periods', AcademicPeriodController::class);
     Route::apiResource('schools', SchoolController::class);
     Route::apiResource('programs', ProgramController::class);
+    Route::apiResource('nstp-reports', NstpReportController::class);
 });

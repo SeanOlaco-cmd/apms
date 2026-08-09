@@ -5,6 +5,7 @@ import DashboardLayout from './layouts/DashboardLayout'
 import DHLayout from './layouts/DHLayout'
 import DeanLayout from './layouts/DeanLayout'
 import VPAALayout from './layouts/VPAALayout'
+import NSTPLayout from './layouts/NSTPLayout'
 import DHDashboard from './pages/dh/DHDashboard'
 import DHEnrollment from './pages/dh/DHEnrollment'
 import DHRetention from './pages/dh/DHRetention'
@@ -31,6 +32,8 @@ import VPAABoardExam from './pages/vpaa/VPAABoardExam'
 import VPAAClassMonitoring from './pages/vpaa/VPAAClassMonitoring'
 import VPAAStudentPerformance from './pages/vpaa/VPAAStudentPerformance'
 import VPAANstp from './pages/vpaa/VPAANstp'
+import NSTPDashboard from './pages/nstp/NSTPDashboard'
+import NSTPReports from './pages/nstp/NSTPReports'
 import Enrollment from './pages/Enrollment'
 import Retention from './pages/Retention'
 import FacultyPerformance from './pages/FacultyPerformance'
@@ -83,6 +86,12 @@ function App() {
         <Route path="class-monitoring" element={<VPAAClassMonitoring />} />
         <Route path="student-performance" element={<VPAAStudentPerformance />} />
         <Route path="nstp" element={<VPAANstp />} />
+      </Route>
+
+      {/* NSTP Head Routes */}
+      <Route path="/nstp" element={<NSTPLayout />}>
+        <Route path="dashboard" element={<NSTPDashboard />} />
+        <Route path="reports" element={<NSTPReports />} />
       </Route>
 
       {/* Department Head Routes */}
