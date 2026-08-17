@@ -42,6 +42,7 @@ import StudentPerformance from './pages/StudentPerformance'
 import BoardExam from './pages/BoardExam'
 import ClassMonitoring from './pages/ClassMonitoring'
 import ShifteeTransferee from './pages/ShifteeTransferee'
+import VPAAUsers from './pages/vpaa/VPAAUsers'
 
 function App() {
   return (
@@ -86,6 +87,7 @@ function App() {
         <Route path="class-monitoring" element={<VPAAClassMonitoring />} />
         <Route path="student-performance" element={<VPAAStudentPerformance />} />
         <Route path="nstp" element={<VPAANstp />} />
+        <Route path="users" element={<VPAAUsers />} />
       </Route>
 
       {/* NSTP Head Routes */}

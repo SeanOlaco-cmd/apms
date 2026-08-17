@@ -12,6 +12,7 @@ const navItems = [
   { label: "Class Monitoring", icon: "📓", path: "/vpaa/class-monitoring" },
   { label: "Student Performance", icon: "🎓", path: "/vpaa/student-performance" },
   { label: "NSTP Reports", icon: "🌿", path: "/vpaa/nstp" },
+  { label: "User Management", icon: "👤", path: "/vpaa/users" },
 ];
 
 export default function VPAALayout() {
