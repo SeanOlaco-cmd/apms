@@ -8,6 +8,7 @@ export default function DHRetention() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [editId, setEditId] = useState(null);
 
   const [form, setForm] = useState({
     academic_period_id: "",
@@ -21,14 +22,29 @@ export default function DHRetention() {
 
   useEffect(() => {
     api.get("/academic-periods").then((res) => setPeriods(res.data));
-    api.get("/retention").then((res) => {
-      const mine = res.data.filter(d => d.school_id == user.school_id);
-      setSubmissions(mine);
-    });
+    loadData();
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const loadData = async () => {
+    const res = await api.get("/retention");
+    const mine = res.data.filter(d => d.school_id == user.school_id && d.program_id == user.program_id);
+    setSubmissions(mine);
+  };
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleEdit = (row) => {
+    setEditId(row.id);
+    setForm({
+      academic_period_id: row.academic_period_id,
+      retention_rate: row.retention_rate,
+      continuing_students: row.continuing_students,
+      dropped_students: row.dropped_students,
+      transferred_students: row.transferred_students,
+      graduated_students: row.graduated_students,
+      notes: row.notes ?? "",
+    });
+    window.scrollTo(0, 0);
   };
 
   const handleSubmit = async () => {
@@ -36,24 +52,16 @@ export default function DHRetention() {
     setError("");
     setSuccess("");
     try {
-      await api.post("/retention", {
-        ...form,
-        school_id: user.school_id,
-        program_id: user.program_id,
-      });
-      setSuccess("Retention data submitted successfully! Waiting for Dean approval.");
-      setForm({
-        academic_period_id: "",
-        retention_rate: "",
-        continuing_students: "",
-        dropped_students: "",
-        transferred_students: "",
-        graduated_students: "",
-        notes: "",
-      });
-      const res = await api.get("/retention");
-      const mine = res.data.filter(d => d.school_id == user.school_id);
-      setSubmissions(mine);
+      if (editId) {
+        await api.put(`/retention/${editId}`, { ...form, status: "pending" });
+        setSuccess("Retention data updated successfully!");
+        setEditId(null);
+      } else {
+        await api.post("/retention", { ...form, school_id: user.school_id, program_id: user.program_id });
+        setSuccess("Retention data submitted successfully!");
+      }
+      setForm({ academic_period_id: "", retention_rate: "", continuing_students: "", dropped_students: "", transferred_students: "", graduated_students: "", notes: "" });
+      loadData();
     } catch {
       setError("Failed to submit. Please check all fields.");
     } finally {
@@ -69,51 +77,42 @@ export default function DHRetention() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">New Submission</h3>
-
+        <h3 className="text-base font-semibold text-gray-800 mb-4">{editId ? "Edit Submission" : "New Submission"}</h3>
         {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg mb-4">{success}</div>}
         {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
-
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Academic Period</label>
             <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
               <option value="">Select period...</option>
-              {periods.map(p => (
-                <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>
-              ))}
+              {periods.map(p => <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>)}
             </select>
           </div>
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Retention Rate (%)</label>
             <input type="number" name="retention_rate" value={form.retention_rate} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0.00" step="0.01" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0.00" step="0.01" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Continuing Students</label>
             <input type="number" name="continuing_students" value={form.continuing_students} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Dropped Students</label>
             <input type="number" name="dropped_students" value={form.dropped_students} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Transferred Students</label>
             <input type="number" name="transferred_students" value={form.transferred_students} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Graduated Students</label>
             <input type="number" name="graduated_students" value={form.graduated_students} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Notes (optional)</label>
@@ -122,18 +121,23 @@ export default function DHRetention() {
               rows={3} placeholder="Add any notes here..." />
           </div>
         </div>
-
-        <button onClick={handleSubmit} disabled={loading}
-          className="mt-4 bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition disabled:opacity-50">
-          {loading ? "Submitting..." : "Submit for Approval"}
-        </button>
+        <div className="flex gap-2 mt-4">
+          <button onClick={handleSubmit} disabled={loading}
+            className="bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition disabled:opacity-50">
+            {loading ? "Saving..." : editId ? "Update Submission" : "Submit"}
+          </button>
+          {editId && (
+            <button onClick={() => { setEditId(null); setForm({ academic_period_id: "", retention_rate: "", continuing_students: "", dropped_students: "", transferred_students: "", graduated_students: "", notes: "" }); }}
+              className="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-base font-semibold text-gray-800 mb-4">My Submissions</h3>
-        {submissions.length === 0 ? (
-          <p className="text-gray-400 text-sm">No submissions yet.</p>
-        ) : (
+        {submissions.length === 0 ? <p className="text-gray-400 text-sm">No submissions yet.</p> : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
@@ -142,6 +146,7 @@ export default function DHRetention() {
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Continuing</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Dropped</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -158,6 +163,14 @@ export default function DHRetention() {
                         'bg-yellow-100 text-yellow-700'}`}>
                       {row.status}
                     </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    {(row.status === 'pending' || row.status === 'rejected') && (
+                      <button onClick={() => handleEdit(row)}
+                        className="bg-blue-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-600 transition">
+                        Edit
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

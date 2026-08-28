@@ -8,6 +8,7 @@ export default function DHAchievements() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [editId, setEditId] = useState(null);
 
   const [form, setForm] = useState({
     academic_period_id: "",
@@ -21,14 +22,29 @@ export default function DHAchievements() {
 
   useEffect(() => {
     api.get("/academic-periods").then((res) => setPeriods(res.data));
-    api.get("/achievements").then((res) => {
-      const mine = res.data.filter(d => d.school_id == user.school_id);
-      setSubmissions(mine);
-    });
+    loadData();
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const loadData = async () => {
+    const res = await api.get("/achievements");
+    const mine = res.data.filter(d => d.school_id == user.school_id);
+    setSubmissions(mine);
+  };
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleEdit = (row) => {
+    setEditId(row.id);
+    setForm({
+      academic_period_id: row.academic_period_id,
+      faculty_name: row.faculty_name,
+      achievement_title: row.achievement_title,
+      type: row.type,
+      date_awarded: row.date_awarded ?? "",
+      awarding_body: row.awarding_body ?? "",
+      description: row.description ?? "",
+    });
+    window.scrollTo(0, 0);
   };
 
   const handleSubmit = async () => {
@@ -36,23 +52,16 @@ export default function DHAchievements() {
     setError("");
     setSuccess("");
     try {
-      await api.post("/achievements", {
-        ...form,
-        school_id: user.school_id,
-      });
-      setSuccess("Achievement submitted! Waiting for Dean approval.");
-      setForm({
-        academic_period_id: "",
-        faculty_name: "",
-        achievement_title: "",
-        type: "other",
-        date_awarded: "",
-        awarding_body: "",
-        description: "",
-      });
-      const res = await api.get("/achievements");
-      const mine = res.data.filter(d => d.school_id == user.school_id);
-      setSubmissions(mine);
+      if (editId) {
+        await api.put(`/achievements/${editId}`, { ...form, status: "pending" });
+        setSuccess("Achievement updated successfully!");
+        setEditId(null);
+      } else {
+        await api.post("/achievements", { ...form, school_id: user.school_id });
+        setSuccess("Achievement submitted!");
+      }
+      setForm({ academic_period_id: "", faculty_name: "", achievement_title: "", type: "other", date_awarded: "", awarding_body: "", description: "" });
+      loadData();
     } catch {
       setError("Failed to submit. Please check all fields.");
     } finally {
@@ -68,33 +77,27 @@ export default function DHAchievements() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">New Submission</h3>
-
+        <h3 className="text-base font-semibold text-gray-800 mb-4">{editId ? "Edit Submission" : "New Submission"}</h3>
         {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg mb-4">{success}</div>}
         {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
-
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Academic Period</label>
             <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
               <option value="">Select period...</option>
-              {periods.map(p => (
-                <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>
-              ))}
+              {periods.map(p => <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>)}
             </select>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Faculty Name</label>
             <input type="text" name="faculty_name" value={form.faculty_name} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="Full name..." />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="Full name..." />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Achievement Title</label>
             <input type="text" name="achievement_title" value={form.achievement_title} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="e.g. Best Researcher Award..." />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="e.g. Best Researcher Award..." />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Type</label>
@@ -116,8 +119,7 @@ export default function DHAchievements() {
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Awarding Body</label>
             <input type="text" name="awarding_body" value={form.awarding_body} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="e.g. CHED, DOST..." />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="e.g. CHED, DOST..." />
           </div>
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Description (optional)</label>
@@ -126,18 +128,23 @@ export default function DHAchievements() {
               rows={3} placeholder="Brief description..." />
           </div>
         </div>
-
-        <button onClick={handleSubmit} disabled={loading}
-          className="mt-4 bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition disabled:opacity-50">
-          {loading ? "Submitting..." : "Submit for Approval"}
-        </button>
+        <div className="flex gap-2 mt-4">
+          <button onClick={handleSubmit} disabled={loading}
+            className="bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition disabled:opacity-50">
+            {loading ? "Saving..." : editId ? "Update Submission" : "Submit"}
+          </button>
+          {editId && (
+            <button onClick={() => { setEditId(null); setForm({ academic_period_id: "", faculty_name: "", achievement_title: "", type: "other", date_awarded: "", awarding_body: "", description: "" }); }}
+              className="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-base font-semibold text-gray-800 mb-4">My Submissions</h3>
-        {submissions.length === 0 ? (
-          <p className="text-gray-400 text-sm">No submissions yet.</p>
-        ) : (
+        {submissions.length === 0 ? <p className="text-gray-400 text-sm">No submissions yet.</p> : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
@@ -146,6 +153,7 @@ export default function DHAchievements() {
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Type</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Date</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -162,6 +170,14 @@ export default function DHAchievements() {
                         'bg-yellow-100 text-yellow-700'}`}>
                       {row.status}
                     </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    {(row.status === 'pending' || row.status === 'rejected') && (
+                      <button onClick={() => handleEdit(row)}
+                        className="bg-blue-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-600 transition">
+                        Edit
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

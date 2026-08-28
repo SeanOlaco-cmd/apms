@@ -8,6 +8,7 @@ export default function DHShifteeTransferee() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [editId, setEditId] = useState(null);
 
   const [form, setForm] = useState({
     academic_period_id: "",
@@ -23,14 +24,31 @@ export default function DHShifteeTransferee() {
 
   useEffect(() => {
     api.get("/academic-periods").then((res) => setPeriods(res.data));
-    api.get("/shiftee-transferee").then((res) => {
-      const mine = res.data.filter(d => d.school_id == user.school_id && d.program_id == user.program_id);
-      setSubmissions(mine);
-    });
+    loadData();
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const loadData = async () => {
+    const res = await api.get("/shiftee-transferee");
+    const mine = res.data.filter(d => d.school_id == user.school_id && d.program_id == user.program_id);
+    setSubmissions(mine);
+  };
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleEdit = (row) => {
+    setEditId(row.id);
+    setForm({
+      academic_period_id: row.academic_period_id,
+      total_shiftees: row.total_shiftees,
+      shiftees_in: row.shiftees_in,
+      shiftees_out: row.shiftees_out,
+      total_transferees: row.total_transferees,
+      transferees_in: row.transferees_in,
+      transferees_out: row.transferees_out,
+      total_dropouts: row.total_dropouts,
+      notes: row.notes ?? "",
+    });
+    window.scrollTo(0, 0);
   };
 
   const handleSubmit = async () => {
@@ -38,26 +56,16 @@ export default function DHShifteeTransferee() {
     setError("");
     setSuccess("");
     try {
-      await api.post("/shiftee-transferee", {
-        ...form,
-        school_id: user.school_id,
-        program_id: user.program_id,
-      });
-      setSuccess("Shiftee/Transferee data submitted successfully!");
-      setForm({
-        academic_period_id: "",
-        total_shiftees: "",
-        shiftees_in: "",
-        shiftees_out: "",
-        total_transferees: "",
-        transferees_in: "",
-        transferees_out: "",
-        total_dropouts: "",
-        notes: "",
-      });
-      const res = await api.get("/shiftee-transferee");
-      const mine = res.data.filter(d => d.school_id == user.school_id && d.program_id == user.program_id);
-      setSubmissions(mine);
+      if (editId) {
+        await api.put(`/shiftee-transferee/${editId}`, { ...form, status: "pending" });
+        setSuccess("Data updated successfully!");
+        setEditId(null);
+      } else {
+        await api.post("/shiftee-transferee", { ...form, school_id: user.school_id, program_id: user.program_id });
+        setSuccess("Data submitted successfully!");
+      }
+      setForm({ academic_period_id: "", total_shiftees: "", shiftees_in: "", shiftees_out: "", total_transferees: "", transferees_in: "", transferees_out: "", total_dropouts: "", notes: "" });
+      loadData();
     } catch {
       setError("Failed to submit. Please check all fields.");
     } finally {
@@ -73,63 +81,52 @@ export default function DHShifteeTransferee() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">New Submission</h3>
-
+        <h3 className="text-base font-semibold text-gray-800 mb-4">{editId ? "Edit Submission" : "New Submission"}</h3>
         {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg mb-4">{success}</div>}
         {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
-
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Academic Period</label>
             <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
               <option value="">Select period...</option>
-              {periods.map(p => (
-                <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>
-              ))}
+              {periods.map(p => <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>)}
             </select>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Shiftees</label>
             <input type="number" name="total_shiftees" value={form.total_shiftees} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Shiftees In</label>
             <input type="number" name="shiftees_in" value={form.shiftees_in} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Shiftees Out</label>
             <input type="number" name="shiftees_out" value={form.shiftees_out} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Transferees</label>
             <input type="number" name="total_transferees" value={form.total_transferees} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Transferees In</label>
             <input type="number" name="transferees_in" value={form.transferees_in} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Transferees Out</label>
             <input type="number" name="transferees_out" value={form.transferees_out} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Dropouts</label>
             <input type="number" name="total_dropouts" value={form.total_dropouts} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              placeholder="0" />
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Notes (optional)</label>
@@ -138,25 +135,32 @@ export default function DHShifteeTransferee() {
               rows={3} placeholder="Add any notes here..." />
           </div>
         </div>
-
-        <button onClick={handleSubmit} disabled={loading}
-          className="mt-4 bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition disabled:opacity-50">
-          {loading ? "Submitting..." : "Submit"}
-        </button>
+        <div className="flex gap-2 mt-4">
+          <button onClick={handleSubmit} disabled={loading}
+            className="bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition disabled:opacity-50">
+            {loading ? "Saving..." : editId ? "Update Submission" : "Submit"}
+          </button>
+          {editId && (
+            <button onClick={() => { setEditId(null); setForm({ academic_period_id: "", total_shiftees: "", shiftees_in: "", shiftees_out: "", total_transferees: "", transferees_in: "", transferees_out: "", total_dropouts: "", notes: "" }); }}
+              className="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-base font-semibold text-gray-800 mb-4">My Submissions</h3>
-        {submissions.length === 0 ? (
-          <p className="text-gray-400 text-sm">No submissions yet.</p>
-        ) : (
+        {submissions.length === 0 ? <p className="text-gray-400 text-sm">No submissions yet.</p> : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Period</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Total Shiftees</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Total Transferees</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Total Dropouts</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Dropouts</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -166,6 +170,22 @@ export default function DHShifteeTransferee() {
                   <td className="py-3 px-4">{row.total_shiftees}</td>
                   <td className="py-3 px-4">{row.total_transferees}</td>
                   <td className="py-3 px-4 text-red-500">{row.total_dropouts}</td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
+                      ${row.status === 'approved' ? 'bg-green-100 text-green-700' :
+                        row.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'}`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    {(row.status === 'pending' || row.status === 'rejected') && (
+                      <button onClick={() => handleEdit(row)}
+                        className="bg-blue-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-600 transition">
+                        Edit
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
