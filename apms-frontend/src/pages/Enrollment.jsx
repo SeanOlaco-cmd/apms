@@ -7,7 +7,7 @@ export default function Enrollment() {
 
   useEffect(() => {
     api.get("/enrollment")
-      .then((res) => setData(res.data))
+      .then((res) => setData(res.data.filter(d => d.status === 'approved')))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
   }, []);

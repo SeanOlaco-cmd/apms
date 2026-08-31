@@ -7,7 +7,7 @@ export default function StudentPerformance() {
 
   useEffect(() => {
     api.get("/student-performance")
-      .then((res) => setData(res.data))
+      .then((res) => setData(res.data.filter(d => d.status === 'approved')))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
   }, []);

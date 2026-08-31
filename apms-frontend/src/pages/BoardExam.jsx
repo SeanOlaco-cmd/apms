@@ -7,7 +7,7 @@ export default function BoardExam() {
 
   useEffect(() => {
     api.get("/board-exam-results")
-      .then((res) => setData(res.data))
+      .then((res) => setData(res.data.filter(d => d.status === 'approved')))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
   }, []);

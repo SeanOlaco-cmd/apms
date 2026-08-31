@@ -7,7 +7,7 @@ export default function Achievements() {
 
   useEffect(() => {
     api.get("/achievements")
-      .then((res) => setData(res.data))
+      .then((res) => setData(res.data.filter(d => d.status === 'approved')))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
   }, []);

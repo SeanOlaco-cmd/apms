@@ -7,7 +7,7 @@ export default function Retention() {
 
   useEffect(() => {
     api.get("/retention")
-      .then((res) => setData(res.data))
+      .then((res) => setData(res.data.filter(d => d.status === 'approved')))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
   }, []);

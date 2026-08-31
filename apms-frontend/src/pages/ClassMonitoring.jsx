@@ -7,7 +7,7 @@ export default function ClassMonitoring() {
 
   useEffect(() => {
     api.get("/class-monitoring")
-      .then((res) => setData(res.data))
+      .then((res) => setData(res.data.filter(d => d.status === 'approved')))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
   }, []);

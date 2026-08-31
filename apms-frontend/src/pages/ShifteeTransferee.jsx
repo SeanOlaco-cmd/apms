@@ -7,7 +7,7 @@ export default function ShifteeTransferee() {
 
   useEffect(() => {
     api.get("/shiftee-transferee")
-      .then((res) => setData(res.data))
+      .then((res) => setData(res.data.filter(d => d.status === 'approved')))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
   }, []);
