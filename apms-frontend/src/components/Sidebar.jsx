@@ -11,6 +11,7 @@ const navItems = [
   { label: "Board Exam Results", icon: "📝", path: "/dashboard/board-exam" },
   { label: "Class Monitoring", icon: "📓", path: "/dashboard/class-monitoring" },
   { label: "Student Performance", icon: "🎓", path: "/dashboard/student-performance" },
+  { label: "Change Password", icon: "🔒", path: "/dashboard/change-password" },
 ];
 
 export default function Sidebar() {

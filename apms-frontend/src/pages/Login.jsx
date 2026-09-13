@@ -24,10 +24,10 @@ if (role === "president") {
   navigate("/dashboard");
 } else if (role === "dean") {
   navigate("/dean/dashboard");
+} else if (role === "registrar") {
+  navigate("/registrar/dashboard");
 } else if (role === "vpaa") {
   navigate("/vpaa/dashboard");
-} else if (role === "nstp_head") {
-  navigate("/nstp/dashboard");
 } else if (role === "system_admin") {
   navigate("/admin/dashboard");
 } else if (role === "department_head") {

@@ -21,23 +21,30 @@ export default function DeanDashboard() {
         navigate("/login");
       } else {
         setUser(parsed);
-        loadStats(parsed.school_id);
+        loadStats();
       }
     }
   }, [navigate]);
 
-  const loadStats = async (schoolId) => {
+  // These 5 are the categories Dean actually submits and VPAA approves.
+  // Enrollment/retention/shiftee-transferee are Registrar's data and
+  // don't go through a Dean-facing approval status, so they're excluded here.
+  const loadStats = async () => {
     try {
-      const [enrollment, retention, studentPerformance] = await Promise.all([
-        api.get("/enrollment"),
-        api.get("/retention"),
+      const [facultyPerf, achievements, boardExam, studentPerf, employees] = await Promise.all([
+        api.get("/faculty-performance"),
+        api.get("/achievements"),
+        api.get("/board-exam-results"),
         api.get("/student-performance"),
+        api.get("/employees"),
       ]);
 
       const allData = [
-        ...enrollment.data.filter(d => d.school_id == schoolId),
-        ...retention.data.filter(d => d.school_id == schoolId),
-        ...studentPerformance.data.filter(d => d.school_id == schoolId),
+        ...facultyPerf.data,
+        ...achievements.data,
+        ...boardExam.data,
+        ...studentPerf.data,
+        ...employees.data,
       ];
 
       setStats({
@@ -55,7 +62,7 @@ export default function DeanDashboard() {
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
         <h1 className="text-2xl font-bold">Welcome, {user?.name}! 👋</h1>
         <p className="text-red-200 text-sm mt-1">
-          Review and approve submissions from your department heads.
+          Submit your school's data and track VPAA review status.
         </p>
       </div>
 
@@ -63,7 +70,7 @@ export default function DeanDashboard() {
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="text-3xl mb-3">⏳</div>
-          <p className="text-gray-500 text-xs font-medium uppercase">Pending Approval</p>
+          <p className="text-gray-500 text-xs font-medium uppercase">Pending Review</p>
           <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -80,18 +87,17 @@ export default function DeanDashboard() {
 
       {/* Quick Links */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">Review Submissions</h3>
+        <h3 className="text-base font-semibold text-gray-800 mb-4">Quick Access</h3>
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Enrollment", icon: "📋", path: "/dean/enrollment" },
-            { label: "Recruitment", icon: "🎯", path: "/dean/recruitment" },
-            { label: "Retention", icon: "📈", path: "/dean/retention" },
+            { label: "Enrollment (view)", icon: "📋", path: "/dean/enrollment" },
+            { label: "Retention (view)", icon: "📈", path: "/dean/retention" },
+            { label: "Shiftee & Transferee (view)", icon: "🔄", path: "/dean/shiftee-transferee" },
             { label: "Faculty Performance", icon: "👨‍🏫", path: "/dean/faculty-performance" },
-            { label: "Workforce Needs", icon: "👥", path: "/dean/workforce" },
             { label: "Achievements", icon: "🏆", path: "/dean/achievements" },
-            { label: "Accreditation", icon: "📜", path: "/dean/accreditation" },
-            { label: "Partnerships", icon: "🤝", path: "/dean/partnerships" },
+            { label: "Board Exam Results", icon: "📝", path: "/dean/board-exam" },
             { label: "Student Performance", icon: "🎓", path: "/dean/student-performance" },
+            { label: "Employees", icon: "🧑‍💼", path: "/dean/employees" },
           ].map((item) => (
             <div key={item.path} onClick={() => navigate(item.path)}
               className="border border-gray-200 rounded-lg p-4 flex items-center gap-3 cursor-pointer hover:shadow-md transition">

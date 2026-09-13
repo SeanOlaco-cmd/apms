@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FacultyAchievement;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 
-class AchievementController extends Controller
+class EmployeeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = FacultyAchievement::with(['school', 'academicPeriod']);
+        $query = Employee::with(['school', 'program', 'academicPeriod']);
 
         if ($request->user()->role === 'dean') {
             $query->where('school_id', $request->user()->school_id);
@@ -21,21 +21,20 @@ class AchievementController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'program_id' => 'nullable|exists:programs,id',
             'academic_period_id' => 'required|exists:academic_periods,id',
-            'faculty_name' => 'required|string',
-            'achievement_title' => 'required|string',
-            'type' => 'required|in:research,publication,award,certification,training,other',
+            'employee_name' => 'required|string',
+            'position' => 'nullable|string',
+            'employment_type' => 'required|in:full_time,part_time',
         ]);
 
-        $data = FacultyAchievement::create([
-            'school_id' => $request->user()->school_id,
+        $data = Employee::create([
+            'school_id' => $request->user()->school_id, // Dean's own school — never trust client input here
+            'program_id' => $request->program_id,
             'academic_period_id' => $request->academic_period_id,
-            'faculty_name' => $request->faculty_name,
-            'achievement_title' => $request->achievement_title,
-            'type' => $request->type,
-            'date_awarded' => $request->date_awarded,
-            'awarding_body' => $request->awarding_body,
-            'description' => $request->description,
+            'employee_name' => $request->employee_name,
+            'position' => $request->position,
+            'employment_type' => $request->employment_type,
             'submitted_by' => $request->user()->id,
             'status' => 'pending',
         ]);
@@ -43,31 +42,31 @@ class AchievementController extends Controller
         return response()->json($data, 201);
     }
 
-    public function show(FacultyAchievement $achievement)
+    public function show(Employee $employee)
     {
-        return $achievement->load(['school', 'academicPeriod']);
+        return $employee->load(['school', 'program', 'academicPeriod']);
     }
 
-    public function update(Request $request, FacultyAchievement $achievement)
+    public function update(Request $request, Employee $employee)
     {
         $request->validate([
             'status' => 'required|in:pending,approved,rejected',
             'rejection_reason' => 'required_if:status,rejected|nullable|string',
         ]);
 
-        $achievement->update([
+        $employee->update([
             'status' => $request->status,
             'rejection_reason' => $request->status === 'rejected' ? $request->rejection_reason : null,
             'approved_by' => $request->status === 'approved' ? $request->user()->id : null,
             'approved_at' => $request->status === 'approved' ? now() : null,
         ]);
 
-        return response()->json($achievement);
+        return response()->json($employee);
     }
 
-    public function destroy(FacultyAchievement $achievement)
+    public function destroy(Employee $employee)
     {
-        $achievement->delete();
+        $employee->delete();
         return response()->json(['message' => 'Deleted successfully']);
     }
 }

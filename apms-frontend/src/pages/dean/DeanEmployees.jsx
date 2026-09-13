@@ -1,38 +1,40 @@
 import { useState, useEffect } from "react";
 import api from "../../api/axios";
 
-export default function DeanAchievements() {
+export default function DeanEmployees() {
+  const user = JSON.parse(localStorage.getItem("user"));
   const [periods, setPeriods] = useState([]);
+  const [programs, setPrograms] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
+    program_id: "",
     academic_period_id: "",
-    faculty_name: "",
-    achievement_title: "",
-    type: "",
-    date_awarded: "",
-    awarding_body: "",
-    description: "",
+    employee_name: "",
+    position: "",
+    employment_type: "",
   });
 
   useEffect(() => {
     api.get("/academic-periods").then((res) => setPeriods(res.data));
+    if (user.school_id) {
+      api.get(`/programs?school_id=${user.school_id}`).then((res) => setPrograms(res.data));
+    }
     loadData();
   }, []);
 
   const loadData = async () => {
-    const res = await api.get("/achievements");
+    const res = await api.get("/employees");
     setSubmissions(res.data);
   };
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const resetForm = () => setForm({
-    academic_period_id: "", faculty_name: "", achievement_title: "", type: "",
-    date_awarded: "", awarding_body: "", description: "",
+    program_id: "", academic_period_id: "", employee_name: "", position: "", employment_type: "",
   });
 
   const handleSubmit = async () => {
@@ -40,7 +42,7 @@ export default function DeanAchievements() {
     setError("");
     setSuccess("");
     try {
-      await api.post("/achievements", form);
+      await api.post("/employees", form);
       setSuccess("Submitted for VPAA review! This entry is now locked.");
       resetForm();
       loadData();
@@ -63,8 +65,11 @@ export default function DeanAchievements() {
   return (
     <div className="flex flex-col gap-6">
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Faculty & Departmental Achievements 🏆</h1>
-        <p className="text-red-200 text-sm mt-1">Submit achievement records for your school. VPAA reviews and approves.</p>
+        <h1 className="text-2xl font-bold">Employees 🧑‍💼</h1>
+        <p className="text-red-200 text-sm mt-1">
+          Submit part-time/full-time employee data for your school. Pick the specific program/department
+          they belong to (e.g. CS or IT under SCS). VPAA reviews and approves.
+        </p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -72,7 +77,15 @@ export default function DeanAchievements() {
         {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg mb-4">{success}</div>}
         {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
         <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Program/Department</label>
+            <select name="program_id" value={form.program_id} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
+              <option value="">Select program/department...</option>
+              {programs.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
+            </select>
+          </div>
+          <div>
             <label className="text-sm font-medium text-gray-700">Academic Period</label>
             <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
@@ -81,43 +94,23 @@ export default function DeanAchievements() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Faculty Name</label>
-            <input type="text" name="faculty_name" value={form.faculty_name} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="Juan Dela Cruz" />
+            <label className="text-sm font-medium text-gray-700">Employee Name</label>
+            <input type="text" name="employee_name" value={form.employee_name} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="Full name" />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Type</label>
-            <select name="type" value={form.type} onChange={handleChange}
+            <label className="text-sm font-medium text-gray-700">Position</label>
+            <input type="text" name="position" value={form.position} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="e.g. Instructor" />
+          </div>
+          <div className="col-span-2">
+            <label className="text-sm font-medium text-gray-700">Employment Type</label>
+            <select name="employment_type" value={form.employment_type} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
               <option value="">Select type...</option>
-              <option value="research">Research</option>
-              <option value="publication">Publication</option>
-              <option value="award">Award</option>
-              <option value="certification">Certification</option>
-              <option value="training">Training</option>
-              <option value="other">Other</option>
+              <option value="full_time">Full Time</option>
+              <option value="part_time">Part Time</option>
             </select>
-          </div>
-          <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-700">Achievement Title</label>
-            <input type="text" name="achievement_title" value={form.achievement_title} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="Best Paper Award" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Date Awarded</label>
-            <input type="date" name="date_awarded" value={form.date_awarded} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Awarding Body</label>
-            <input type="text" name="awarding_body" value={form.awarding_body} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="e.g. CHED" />
-          </div>
-          <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-700">Description (optional)</label>
-            <textarea name="description" value={form.description} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              rows={3} placeholder="Add details here..." />
           </div>
         </div>
         <div className="flex gap-2 mt-4">
@@ -134,20 +127,20 @@ export default function DeanAchievements() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Faculty</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Title</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Program</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Name</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Position</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Type</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Date</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
               {submissions.map((row) => (
                 <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-3 px-4">{row.faculty_name}</td>
-                  <td className="py-3 px-4">{row.achievement_title}</td>
-                  <td className="py-3 px-4 capitalize">{row.type}</td>
-                  <td className="py-3 px-4">{row.date_awarded}</td>
+                  <td className="py-3 px-4">{row.program?.code || "—"}</td>
+                  <td className="py-3 px-4">{row.employee_name}</td>
+                  <td className="py-3 px-4">{row.position}</td>
+                  <td className="py-3 px-4 capitalize">{row.employment_type?.replace("_", " ")}</td>
                   <td className="py-3 px-4">
                     {statusBadge(row.status)}
                     {row.status === 'rejected' && <p className="text-red-500 text-xs mt-1">{row.rejection_reason}</p>}

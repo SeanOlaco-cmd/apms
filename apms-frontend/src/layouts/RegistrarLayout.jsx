@@ -2,11 +2,13 @@ import { Outlet, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 const navItems = [
-  { label: "Dashboard", icon: "📊", path: "/nstp/dashboard" },
-  { label: "NSTP Reports", icon: "🌿", path: "/nstp/reports" },
+  { label: "Dashboard", icon: "📊", path: "/registrar/dashboard" },
+  { label: "Enrollment", icon: "📋", path: "/registrar/enrollment" },
+  { label: "Retention", icon: "📈", path: "/registrar/retention" },
+  { label: "Shiftee, Transferee & Dropouts", icon: "🔄", path: "/registrar/shiftee-transferee" },
 ];
 
-export default function NSTOLayout() {
+export default function RegistrarLayout() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const location = window.location.pathname;
@@ -20,6 +22,7 @@ export default function NSTOLayout() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar */}
       <div className="w-64 min-h-screen bg-[#7b1113] flex flex-col">
         <div className="p-6 border-b border-[#5e0d0f]">
           <h1 className="text-white font-bold text-xl">APMS</h1>
@@ -46,6 +49,12 @@ export default function NSTOLayout() {
           ))}
         </nav>
         <div className="p-3 border-t border-[#5e0d0f]">
+             <button
+            onClick={() => navigate("/dean/change-password")}
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"
+          >
+            <span>🔒</span> Change Password 
+            </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"
@@ -55,13 +64,14 @@ export default function NSTOLayout() {
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <h2 className="text-lg font-semibold text-gray-800">NSTP Head Portal</h2>
+          <h2 className="text-lg font-semibold text-gray-800">Registrar Portal</h2>
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
-              <p className="text-xs text-gray-400">NSTP Head</p>
+              <p className="text-xs text-gray-400">Registrar</p>
             </div>
             <div className="w-9 h-9 rounded-full bg-[#7b1113] flex items-center justify-center text-white font-bold text-sm">
               {user?.name?.charAt(0)}

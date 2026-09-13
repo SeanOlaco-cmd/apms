@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
 
-export default function VPAAFacultyPerformance() {
+export default function VPAAEmployees() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rejectId, setRejectId] = useState(null);
@@ -11,19 +11,19 @@ export default function VPAAFacultyPerformance() {
 
   const loadData = () => {
     setLoading(true);
-    api.get("/faculty-performance")
+    api.get("/employees")
       .then((res) => setData(res.data))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
   };
 
   const handleApprove = async (id) => {
-    await api.put(`/faculty-performance/${id}`, { status: "approved" });
+    await api.put(`/employees/${id}`, { status: "approved" });
     loadData();
   };
 
   const handleReject = async (id) => {
-    await api.put(`/faculty-performance/${id}`, { status: "rejected", rejection_reason: rejectReason });
+    await api.put(`/employees/${id}`, { status: "rejected", rejection_reason: rejectReason });
     setRejectId(null);
     setRejectReason("");
     loadData();
@@ -32,8 +32,8 @@ export default function VPAAFacultyPerformance() {
   return (
     <div className="flex flex-col gap-6">
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Faculty Performance 👨‍🏫</h1>
-        <p className="text-red-200 text-sm mt-1">Review and approve faculty performance data submitted by Deans.</p>
+        <h1 className="text-2xl font-bold">Employees 🧑‍💼</h1>
+        <p className="text-red-200 text-sm mt-1">Review and approve part-time/full-time employee data submitted by Deans.</p>
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         {loading ? <p className="text-gray-400 text-sm">Loading...</p>
@@ -43,11 +43,10 @@ export default function VPAAFacultyPerformance() {
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">School</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Period</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Total Faculty</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Full Time</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Part Time</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Avg Score</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Program</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Name</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Position</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Type</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Action</th>
               </tr>
@@ -56,11 +55,10 @@ export default function VPAAFacultyPerformance() {
               {data.map((row) => (
                 <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="py-3 px-4">{row.school?.code}</td>
-                  <td className="py-3 px-4">{row.academic_period?.school_year} - {row.academic_period?.semester}</td>
-                  <td className="py-3 px-4">{row.total_faculty}</td>
-                  <td className="py-3 px-4">{row.full_time}</td>
-                  <td className="py-3 px-4">{row.part_time}</td>
-                  <td className="py-3 px-4 text-green-600 font-semibold">{row.average_evaluation_score}</td>
+                  <td className="py-3 px-4">{row.program?.code || "—"}</td>
+                  <td className="py-3 px-4">{row.employee_name}</td>
+                  <td className="py-3 px-4">{row.position}</td>
+                  <td className="py-3 px-4 capitalize">{row.employment_type?.replace("_", " ")}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
                       ${row.status === 'approved' ? 'bg-green-100 text-green-700' :

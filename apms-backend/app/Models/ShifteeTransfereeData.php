@@ -20,6 +20,9 @@ class ShifteeTransfereeData extends Model
         'total_dropouts',
         'status',
         'notes',
+        'rejection_reason',
+        'approved_by',
+        'approved_at',
     ];
 
     public function school()

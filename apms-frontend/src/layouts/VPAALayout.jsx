@@ -11,8 +11,9 @@ const navItems = [
   { label: "Board Exam Results", icon: "📝", path: "/vpaa/board-exam" },
   { label: "Class Monitoring", icon: "📓", path: "/vpaa/class-monitoring" },
   { label: "Student Performance", icon: "🎓", path: "/vpaa/student-performance" },
-  { label: "NSTP Reports", icon: "🌿", path: "/vpaa/nstp" },
+  { label: "Backup & Recovery", icon: "💾", path: "/vpaa/backup" },
   { label: "User Management", icon: "👤", path: "/vpaa/users" },
+  { label: "Employees", icon: "🧑‍💼", path: "/vpaa/employees" },
 ];
 
 export default function VPAALayout() {
@@ -55,6 +56,12 @@ export default function VPAALayout() {
           ))}
         </nav>
         <div className="p-3 border-t border-[#5e0d0f]">
+          <button
+            onClick={() => navigate("/dean/change-password")}
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"
+          >
+            <span>🔒</span> Change Password 
+            </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"

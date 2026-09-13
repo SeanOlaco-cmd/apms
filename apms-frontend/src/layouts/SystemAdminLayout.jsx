@@ -2,18 +2,11 @@ import { Outlet, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 const navItems = [
-  { label: "Dashboard", icon: "📊", path: "/dean/dashboard" },
-  { label: "Enrollment", icon: "📋", path: "/dean/enrollment" },
-  { label: "Retention", icon: "📈", path: "/dean/retention" },
-  { label: "Shiftee & Transferee", icon: "🔄", path: "/dean/shiftee-transferee" },
-  { label: "Faculty Performance", icon: "👨‍🏫", path: "/dean/faculty-performance" },
-  { label: "Achievements", icon: "🏆", path: "/dean/achievements" },
-  { label: "Board Exam Results", icon: "📝", path: "/dean/board-exam" },
-  { label: "Student Performance", icon: "🎓", path: "/dean/student-performance" },
-  { label: "Employees", icon: "🧑‍💼", path: "/dean/employees" },
+  { label: "Dashboard", icon: "📊", path: "/admin/dashboard" },
+  { label: "User Management", icon: "👤", path: "/admin/users" },
 ];
 
-export default function DeanLayout() {
+export default function SystemAdminLayout() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const location = window.location.pathname;
@@ -27,6 +20,7 @@ export default function DeanLayout() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar */}
       <div className="w-64 min-h-screen bg-[#7b1113] flex flex-col">
         <div className="p-6 border-b border-[#5e0d0f]">
           <h1 className="text-white font-bold text-xl">APMS</h1>
@@ -53,12 +47,12 @@ export default function DeanLayout() {
           ))}
         </nav>
         <div className="p-3 border-t border-[#5e0d0f]">
-           <button
-            onClick={() => navigate("/dean/change-password")}
+          <button
+            onClick={() => navigate("/admin/change-password")}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"
           >
-            <span>🔒</span> Change Password 
-            </button>
+            <span>🔒</span> Change Password
+          </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"
@@ -68,13 +62,14 @@ export default function DeanLayout() {
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <h2 className="text-lg font-semibold text-gray-800">Dean Portal</h2>
+          <h2 className="text-lg font-semibold text-gray-800">System Admin Portal</h2>
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
-              <p className="text-xs text-gray-400">Dean</p>
+              <p className="text-xs text-gray-400">System Admin</p>
             </div>
             <div className="w-9 h-9 rounded-full bg-[#7b1113] flex items-center justify-center text-white font-bold text-sm">
               {user?.name?.charAt(0)}

@@ -21,6 +21,9 @@ class BoardExamResult extends Model
         'exam_date',
         'status',
         'notes',
+        'rejection_reason',
+        'approved_by',
+        'approved_at',
     ];
 
     public function school()

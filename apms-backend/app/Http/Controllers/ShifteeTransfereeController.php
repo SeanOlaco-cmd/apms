@@ -7,9 +7,15 @@ use Illuminate\Http\Request;
 
 class ShifteeTransfereeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return ShifteeTransfereeData::with(['school', 'program', 'academicPeriod'])->get();
+        $query = ShifteeTransfereeData::with(['school', 'program', 'academicPeriod']);
+
+        if ($request->user()->role === 'dean') {
+            $query->where('school_id', $request->user()->school_id);
+        }
+
+        return $query->get();
     }
 
     public function store(Request $request)
@@ -28,10 +34,21 @@ class ShifteeTransfereeController extends Controller
         ]);
 
         $data = ShifteeTransfereeData::create([
-            ...$request->all(),
+            'school_id' => $request->school_id,
+            'program_id' => $request->program_id,
+            'academic_period_id' => $request->academic_period_id,
+            'total_shiftees' => $request->total_shiftees,
+            'shiftees_in' => $request->shiftees_in,
+            'shiftees_out' => $request->shiftees_out,
+            'total_transferees' => $request->total_transferees,
+            'transferees_in' => $request->transferees_in,
+            'transferees_out' => $request->transferees_out,
+            'total_dropouts' => $request->total_dropouts,
+            'notes' => $request->notes,
             'submitted_by' => $request->user()->id,
-            'status' => 'pending',
+            'status' => 'approved',
         ]);
+
         return response()->json($data, 201);
     }
 
@@ -42,7 +59,26 @@ class ShifteeTransfereeController extends Controller
 
     public function update(Request $request, ShifteeTransfereeData $shifteeTransfereeData)
     {
-        $shifteeTransfereeData->update($request->all());
+        $request->validate([
+            'school_id' => 'sometimes|exists:schools,id',
+            'program_id' => 'sometimes|exists:programs,id',
+            'academic_period_id' => 'sometimes|exists:academic_periods,id',
+            'total_shiftees' => 'sometimes|integer',
+            'shiftees_in' => 'sometimes|integer',
+            'shiftees_out' => 'sometimes|integer',
+            'total_transferees' => 'sometimes|integer',
+            'transferees_in' => 'sometimes|integer',
+            'transferees_out' => 'sometimes|integer',
+            'total_dropouts' => 'sometimes|integer',
+            'notes' => 'sometimes|nullable|string',
+        ]);
+
+        $shifteeTransfereeData->update($request->only([
+            'school_id', 'program_id', 'academic_period_id', 'total_shiftees',
+            'shiftees_in', 'shiftees_out', 'total_transferees', 'transferees_in',
+            'transferees_out', 'total_dropouts', 'notes',
+        ]));
+
         return response()->json($shifteeTransfereeData);
     }
 

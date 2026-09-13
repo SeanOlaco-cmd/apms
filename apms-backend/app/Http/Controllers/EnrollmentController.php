@@ -7,9 +7,15 @@ use Illuminate\Http\Request;
 
 class EnrollmentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return EnrollmentData::with(['school', 'program', 'academicPeriod'])->get();
+        $query = EnrollmentData::with(['school', 'program', 'academicPeriod']);
+
+        if ($request->user()->role === 'dean') {
+            $query->where('school_id', $request->user()->school_id);
+        }
+
+        return $query->get();
     }
 
     public function store(Request $request)
@@ -26,9 +32,17 @@ class EnrollmentController extends Controller
         ]);
 
         $data = EnrollmentData::create([
-             ...$request->all(),
-             'submitted_by' => $request->user()->id,
-             'status' => 'pending',
+            'school_id' => $request->school_id,
+            'program_id' => $request->program_id,
+            'academic_period_id' => $request->academic_period_id,
+            'total_enrolled' => $request->total_enrolled,
+            'male_count' => $request->male_count,
+            'female_count' => $request->female_count,
+            'new_students' => $request->new_students,
+            'old_students' => $request->old_students,
+            'notes' => $request->notes,
+            'submitted_by' => $request->user()->id,
+            'status' => 'approved', // Registrar data bypasses approval
         ]);
 
         return response()->json($data, 201);
@@ -41,7 +55,24 @@ class EnrollmentController extends Controller
 
     public function update(Request $request, EnrollmentData $enrollment)
     {
-        $enrollment->update($request->all());
+        $request->validate([
+            'school_id' => 'sometimes|exists:schools,id',
+            'program_id' => 'sometimes|exists:programs,id',
+            'academic_period_id' => 'sometimes|exists:academic_periods,id',
+            'total_enrolled' => 'sometimes|integer',
+            'male_count' => 'sometimes|integer',
+            'female_count' => 'sometimes|integer',
+            'new_students' => 'sometimes|integer',
+            'old_students' => 'sometimes|integer',
+            'notes' => 'sometimes|nullable|string',
+        ]);
+
+        $enrollment->update($request->only([
+            'school_id', 'program_id', 'academic_period_id',
+            'total_enrolled', 'male_count', 'female_count',
+            'new_students', 'old_students', 'notes',
+        ]));
+
         return response()->json($enrollment);
     }
 

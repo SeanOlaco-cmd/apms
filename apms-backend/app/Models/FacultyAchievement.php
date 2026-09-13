@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class FacultyAchievement extends Model
 {
-    protected $fillable = [
+   protected $fillable = [
         'school_id',
         'academic_period_id',
         'faculty_name',
@@ -15,6 +15,11 @@ class FacultyAchievement extends Model
         'date_awarded',
         'awarding_body',
         'description',
+        'status',
+        'rejection_reason',
+        'submitted_by',
+        'approved_by',
+        'approved_at',
     ];
 
     public function school()

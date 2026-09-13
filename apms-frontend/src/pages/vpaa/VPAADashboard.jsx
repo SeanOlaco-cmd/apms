@@ -91,7 +91,7 @@ export default function VPAADashboard() {
             { label: "Board Exam Results", icon: "📝", path: "/vpaa/board-exam" },
             { label: "Class Monitoring", icon: "📓", path: "/vpaa/class-monitoring" },
             { label: "Student Performance", icon: "🎓", path: "/vpaa/student-performance" },
-            { label: "NSTP Reports", icon: "🌿", path: "/vpaa/nstp" },
+            { label: "Backup & Recovery", icon: "💾", path: "/vpaa/backup" },
           ].map((item) => (
             <div key={item.path} onClick={() => navigate(item.path)}
               className="border border-gray-200 rounded-lg p-4 flex items-center gap-3 cursor-pointer hover:shadow-md transition">

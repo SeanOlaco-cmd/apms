@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import api from "../../api/axios";
 
-export default function DeanStudentPerformance() {
+export default function RegistrarRetention() {
   const user = JSON.parse(localStorage.getItem("user"));
   const [periods, setPeriods] = useState([]);
+  const [schools, setSchools] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -11,37 +12,48 @@ export default function DeanStudentPerformance() {
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
+    school_id: "",
     program_id: "",
     academic_period_id: "",
-    total_students: "",
-    passing: "",
-    failing: "",
-    incomplete: "",
-    dropped: "",
-    passing_rate: "",
-    average_gwa: "",
-    latin_honors: "",
+    retention_rate: "",
+    continuing_students: "",
+    dropped_students: "",
+    transferred_students: "",
+    graduated_students: "",
     notes: "",
   });
 
   useEffect(() => {
     api.get("/academic-periods").then((res) => setPeriods(res.data));
-    if (user.school_id) {
-      api.get(`/programs?school_id=${user.school_id}`).then((res) => setPrograms(res.data));
-    }
+    api.get("/schools").then((res) => setSchools(res.data));
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (form.school_id) {
+      api.get(`/programs?school_id=${form.school_id}`).then((res) => setPrograms(res.data));
+    } else {
+      setPrograms([]);
+    }
+  }, [form.school_id]);
+
   const loadData = async () => {
-    const res = await api.get("/student-performance");
+    const res = await api.get("/retention");
     setSubmissions(res.data);
   };
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "school_id") {
+      setForm({ ...form, school_id: value, program_id: "" });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
+  };
 
   const resetForm = () => setForm({
-    program_id: "", academic_period_id: "", total_students: "", passing: "",
-    failing: "", incomplete: "", dropped: "", passing_rate: "", average_gwa: "", latin_honors: "", notes: "",
+    school_id: "", program_id: "", academic_period_id: "", retention_rate: "",
+    continuing_students: "", dropped_students: "", transferred_students: "", graduated_students: "", notes: "",
   });
 
   const handleSubmit = async () => {
@@ -49,8 +61,8 @@ export default function DeanStudentPerformance() {
     setError("");
     setSuccess("");
     try {
-      await api.post("/student-performance", form);
-      setSuccess("Submitted for VPAA review! This entry is now locked.");
+      await api.post("/retention", { ...form, submitted_by: user.id });
+      setSuccess("Retention data submitted successfully! This entry is now locked — contact an admin if it needs correcting.");
       resetForm();
       loadData();
     } catch {
@@ -60,20 +72,11 @@ export default function DeanStudentPerformance() {
     }
   };
 
-  const statusBadge = (status) => (
-    <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
-      ${status === 'approved' ? 'bg-green-100 text-green-700' :
-        status === 'rejected' ? 'bg-red-100 text-red-700' :
-        'bg-yellow-100 text-yellow-700'}`}>
-      {status}
-    </span>
-  );
-
   return (
     <div className="flex flex-col gap-6">
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Student Performance 🎓</h1>
-        <p className="text-red-200 text-sm mt-1">Submit student performance data for your school's programs. VPAA reviews and approves.</p>
+        <h1 className="text-2xl font-bold">Retention Rates 📈</h1>
+        <p className="text-red-200 text-sm mt-1">Submit retention data for any school and program. Submissions lock once saved.</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -82,14 +85,22 @@ export default function DeanStudentPerformance() {
         {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-gray-700">Program</label>
-            <select name="program_id" value={form.program_id} onChange={handleChange}
+            <label className="text-sm font-medium text-gray-700">School</label>
+            <select name="school_id" value={form.school_id} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
+              <option value="">Select school...</option>
+              {schools.map(s => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Program</label>
+            <select name="program_id" value={form.program_id} onChange={handleChange} disabled={!form.school_id}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113] disabled:bg-gray-100">
               <option value="">Select program...</option>
               {programs.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
             </select>
           </div>
-          <div>
+          <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Academic Period</label>
             <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
@@ -97,44 +108,29 @@ export default function DeanStudentPerformance() {
               {periods.map(p => <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>)}
             </select>
           </div>
+          <div className="col-span-2">
+            <label className="text-sm font-medium text-gray-700">Retention Rate (%)</label>
+            <input type="number" name="retention_rate" value={form.retention_rate} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0.00" step="0.01" />
+          </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Total Students</label>
-            <input type="number" name="total_students" value={form.total_students} onChange={handleChange}
+            <label className="text-sm font-medium text-gray-700">Continuing Students</label>
+            <input type="number" name="continuing_students" value={form.continuing_students} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Average GWA</label>
-            <input type="number" step="0.01" name="average_gwa" value={form.average_gwa} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0.00" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Passing</label>
-            <input type="number" name="passing" value={form.passing} onChange={handleChange}
+            <label className="text-sm font-medium text-gray-700">Dropped Students</label>
+            <input type="number" name="dropped_students" value={form.dropped_students} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Failing</label>
-            <input type="number" name="failing" value={form.failing} onChange={handleChange}
+            <label className="text-sm font-medium text-gray-700">Transferred Students</label>
+            <input type="number" name="transferred_students" value={form.transferred_students} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Incomplete</label>
-            <input type="number" name="incomplete" value={form.incomplete} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Dropped</label>
-            <input type="number" name="dropped" value={form.dropped} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Passing Rate (%)</label>
-            <input type="number" step="0.01" name="passing_rate" value={form.passing_rate} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0.00" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Latin Honors</label>
-            <input type="number" name="latin_honors" value={form.latin_honors} onChange={handleChange}
+            <label className="text-sm font-medium text-gray-700">Graduated Students</label>
+            <input type="number" name="graduated_students" value={form.graduated_students} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div className="col-span-2">
@@ -153,31 +149,28 @@ export default function DeanStudentPerformance() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">Your Submissions</h3>
+        <h3 className="text-base font-semibold text-gray-800 mb-4">All Submissions (locked)</h3>
         {submissions.length === 0 ? <p className="text-gray-400 text-sm">No submissions yet.</p> : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">School</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Program</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Total</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Passing</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Passing Rate</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Avg GWA</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Period</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Retention Rate</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Continuing</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Dropped</th>
               </tr>
             </thead>
             <tbody>
               {submissions.map((row) => (
                 <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="py-3 px-4">{row.school?.code}</td>
                   <td className="py-3 px-4">{row.program?.code}</td>
-                  <td className="py-3 px-4">{row.total_students}</td>
-                  <td className="py-3 px-4">{row.passing}</td>
-                  <td className="py-3 px-4 text-green-600 font-semibold">{row.passing_rate}%</td>
-                  <td className="py-3 px-4">{row.average_gwa}</td>
-                  <td className="py-3 px-4">
-                    {statusBadge(row.status)}
-                    {row.status === 'rejected' && <p className="text-red-500 text-xs mt-1">{row.rejection_reason}</p>}
-                  </td>
+                  <td className="py-3 px-4">{row.academic_period?.school_year} - {row.academic_period?.semester}</td>
+                  <td className="py-3 px-4 text-green-600 font-semibold">{row.retention_rate}%</td>
+                  <td className="py-3 px-4">{row.continuing_students}</td>
+                  <td className="py-3 px-4 text-red-500">{row.dropped_students}</td>
                 </tr>
               ))}
             </tbody>
