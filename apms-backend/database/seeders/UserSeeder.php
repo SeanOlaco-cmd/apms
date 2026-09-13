@@ -44,63 +44,36 @@ class UserSeeder extends Seeder
         }
 
         // VPAA
-    User::create([
-        'name' => 'Vice President Academic Affairs',
-        'email' => 'vpaa@cct.edu.ph',
-        'password' => Hash::make('cct@vpaa2026'),
-        'role' => 'vpaa',
-        'school_id' => null,
-        'program_id' => null,
-        'is_active' => true,
-    ]);
+        User::create([
+            'name' => 'Vice President Academic Affairs',
+            'email' => 'vpaa@cct.edu.ph',
+            'password' => Hash::make('cct@vpaa2026'),
+            'role' => 'vpaa',
+            'school_id' => null,
+            'program_id' => null,
+            'is_active' => true,
+        ]);
 
-    // NSTP Head
-    User::create([
-        'name' => 'NSTP Head',
-        'email' => 'nstp@cct.edu.ph',
-        'password' => Hash::make('cct@nstp2026'),
-        'role' => 'nstp_head',
-        'school_id' => null,
-        'program_id' => null,
-        'is_active' => true,
-    ]);
+        // System Admin
+        User::create([
+            'name' => 'System Administrator',
+            'email' => 'sysadmin@cct.edu.ph',
+            'password' => Hash::make('cct@sysadmin2026'),
+            'role' => 'system_admin',
+            'school_id' => null,
+            'program_id' => null,
+            'is_active' => true,
+        ]);
 
-    // System Admin
-    User::create([
-        'name' => 'System Administrator',
-        'email' => 'sysadmin@cct.edu.ph',
-        'password' => Hash::make('cct@sysadmin2026'),
-        'role' => 'system_admin',
-        'school_id' => null,
-        'program_id' => null,
-        'is_active' => true,
-    ]);
-
-        // Department Heads
-        $deptHeads = [
-            ['name' => 'DH - BSCS', 'email' => 'dh.bscs@cct.edu.ph', 'password' => 'cct@bscs2026', 'school_id' => 1, 'program_id' => 1],
-            ['name' => 'DH - BSIT', 'email' => 'dh.bsit@cct.edu.ph', 'password' => 'cct@bsit2026', 'school_id' => 1, 'program_id' => 2],
-            ['name' => 'DH - BSED English', 'email' => 'dh.bsed.eng@cct.edu.ph', 'password' => 'cct@bsedeng2026', 'school_id' => 2, 'program_id' => 3],
-            ['name' => 'DH - BSED Filipino', 'email' => 'dh.bsed.fil@cct.edu.ph', 'password' => 'cct@bsedfil2026', 'school_id' => 2, 'program_id' => 4],
-            ['name' => 'DH - BSED Math', 'email' => 'dh.bsed.math@cct.edu.ph', 'password' => 'cct@bsedmath2026', 'school_id' => 2, 'program_id' => 5],
-            ['name' => 'DH - BSED Social Studies', 'email' => 'dh.bsed.ss@cct.edu.ph', 'password' => 'cct@bsedss2026', 'school_id' => 2, 'program_id' => 6],
-            ['name' => 'DH - BSHM', 'email' => 'dh.bshm@cct.edu.ph', 'password' => 'cct@bshm2026', 'school_id' => 3, 'program_id' => 7],
-            ['name' => 'DH - BSTM', 'email' => 'dh.bstm@cct.edu.ph', 'password' => 'cct@bstm2026', 'school_id' => 3, 'program_id' => 8],
-            ['name' => 'DH - BSBA Marketing', 'email' => 'dh.bsba.mm@cct.edu.ph', 'password' => 'cct@bsbamm2026', 'school_id' => 6, 'program_id' => 11],
-            ['name' => 'DH - BSBA HRDM', 'email' => 'dh.bsba.hrdm@cct.edu.ph', 'password' => 'cct@bsbahrdm2026', 'school_id' => 6, 'program_id' => 12],
-            ['name' => 'DH - BSOA', 'email' => 'dh.bsoa@cct.edu.ph', 'password' => 'cct@bsoa2026', 'school_id' => 6, 'program_id' => 13],
-        ];
-
-        foreach ($deptHeads as $dh) {
-            User::create([
-                'name' => $dh['name'],
-                'email' => $dh['email'],
-                'password' => Hash::make($dh['password']),
-                'role' => 'department_head',
-                'school_id' => $dh['school_id'],
-                'program_id' => $dh['program_id'],
-                'is_active' => true,
-            ]);
-        }
+        // Registrar — college-wide, replaces the old per-program Department Head accounts
+        User::create([
+            'name' => 'Registrar',
+            'email' => 'registrar@cct.edu.ph',
+            'password' => Hash::make('registrar@cct_2026'),
+            'role' => 'registrar',
+            'school_id' => null,
+            'program_id' => null,
+            'is_active' => true,
+        ]);
     }
 }
