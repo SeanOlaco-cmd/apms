@@ -4,6 +4,7 @@ import api from "../../api/axios";
 export default function DHEnrollment() {
   const user = JSON.parse(localStorage.getItem("user"));
   const [periods, setPeriods] = useState([]);
+  const activePeriodId = periods.find((p) => p.is_active)?.id || "";
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
@@ -21,7 +22,13 @@ export default function DHEnrollment() {
   });
 
   useEffect(() => {
-    api.get("/academic-periods").then((res) => setPeriods(res.data));
+    api.get("/academic-periods").then((res) => {
+      setPeriods(res.data);
+      const active = res.data.find((p) => p.is_active);
+      if (active) {
+        setForm((f) => (f.academic_period_id ? f : { ...f, academic_period_id: active.id }));
+      }
+    });
     loadData();
   }, []);
 
@@ -66,7 +73,7 @@ export default function DHEnrollment() {
         });
         setSuccess("Enrollment data submitted successfully!");
       }
-      setForm({ academic_period_id: "", total_enrolled: "", male_count: "", female_count: "", new_students: "", old_students: "", notes: "" });
+      setForm({ academic_period_id: activePeriodId, total_enrolled: "", male_count: "", female_count: "", new_students: "", old_students: "", notes: "" });
       loadData();
     } catch {
       setError("Failed to submit. Please check all fields.");
@@ -91,13 +98,13 @@ export default function DHEnrollment() {
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Academic Period</label>
-            <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-              <option value="">Select period...</option>
-              {periods.map(p => (
-                <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>
-              ))}
-            </select>
+            <div className="mt-1 w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-2 text-sm text-gray-500">
+              {(() => {
+                const p = periods.find((pd) => pd.id == form.academic_period_id);
+                return p ? `${p.school_year} - ${p.semester} Semester` : "Loading current period...";
+              })()}
+              <p className="text-xs text-gray-400 mt-1">Set automatically to the current academic period — cannot be changed here.</p>
+            </div>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Enrolled</label>
@@ -138,7 +145,7 @@ export default function DHEnrollment() {
             {loading ? "Saving..." : editId ? "Update Submission" : "Submit"}
           </button>
           {editId && (
-            <button onClick={() => { setEditId(null); setForm({ academic_period_id: "", total_enrolled: "", male_count: "", female_count: "", new_students: "", old_students: "", notes: "" }); }}
+            <button onClick={() => { setEditId(null); setForm({ academic_period_id: activePeriodId, total_enrolled: "", male_count: "", female_count: "", new_students: "", old_students: "", notes: "" }); }}
               className="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">
               Cancel
             </button>

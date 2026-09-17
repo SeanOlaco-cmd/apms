@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import api from "../../api/axios";
 
-export default function DHFacultyPerformance() {
+export default function DHAchievements() {
   const user = JSON.parse(localStorage.getItem("user"));
   const [periods, setPeriods] = useState([]);
+  const activePeriodId = periods.find((p) => p.is_active)?.id || "";
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
@@ -12,23 +13,27 @@ export default function DHFacultyPerformance() {
 
   const [form, setForm] = useState({
     academic_period_id: "",
-    total_faculty: "",
-    full_time: "",
-    part_time: "",
-    average_evaluation_score: "",
-    with_masters: "",
-    with_doctorate: "",
-    with_board_license: "",
-    notes: "",
+    faculty_name: "",
+    achievement_title: "",
+    type: "other",
+    date_awarded: "",
+    awarding_body: "",
+    description: "",
   });
 
   useEffect(() => {
-    api.get("/academic-periods").then((res) => setPeriods(res.data));
+    api.get("/academic-periods").then((res) => {
+      setPeriods(res.data);
+      const active = res.data.find((p) => p.is_active);
+      if (active) {
+        setForm((f) => (f.academic_period_id ? f : { ...f, academic_period_id: active.id }));
+      }
+    });
     loadData();
   }, []);
 
   const loadData = async () => {
-    const res = await api.get("/faculty-performance");
+    const res = await api.get("/achievements");
     const mine = res.data.filter(d => d.school_id == user.school_id);
     setSubmissions(mine);
   };
@@ -39,14 +44,12 @@ export default function DHFacultyPerformance() {
     setEditId(row.id);
     setForm({
       academic_period_id: row.academic_period_id,
-      total_faculty: row.total_faculty,
-      full_time: row.full_time,
-      part_time: row.part_time,
-      average_evaluation_score: row.average_evaluation_score,
-      with_masters: row.with_masters,
-      with_doctorate: row.with_doctorate,
-      with_board_license: row.with_board_license,
-      notes: row.notes ?? "",
+      faculty_name: row.faculty_name,
+      achievement_title: row.achievement_title,
+      type: row.type,
+      date_awarded: row.date_awarded ?? "",
+      awarding_body: row.awarding_body ?? "",
+      description: row.description ?? "",
     });
     window.scrollTo(0, 0);
   };
@@ -57,14 +60,14 @@ export default function DHFacultyPerformance() {
     setSuccess("");
     try {
       if (editId) {
-        await api.put(`/faculty-performance/${editId}`, { ...form, status: "pending" });
-        setSuccess("Faculty performance data updated successfully!");
+        await api.put(`/achievements/${editId}`, { ...form, status: "pending" });
+        setSuccess("Achievement updated successfully!");
         setEditId(null);
       } else {
-        await api.post("/faculty-performance", { ...form, school_id: user.school_id });
-        setSuccess("Faculty performance data submitted!");
+        await api.post("/achievements", { ...form, school_id: user.school_id });
+        setSuccess("Achievement submitted!");
       }
-      setForm({ academic_period_id: "", total_faculty: "", full_time: "", part_time: "", average_evaluation_score: "", with_masters: "", with_doctorate: "", with_board_license: "", notes: "" });
+      setForm({ academic_period_id: activePeriodId, faculty_name: "", achievement_title: "", type: "other", date_awarded: "", awarding_body: "", description: "" });
       loadData();
     } catch {
       setError("Failed to submit. Please check all fields.");
@@ -76,8 +79,8 @@ export default function DHFacultyPerformance() {
   return (
     <div className="flex flex-col gap-6">
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Faculty Performance 👨‍🏫</h1>
-        <p className="text-red-200 text-sm mt-1">Submit faculty evaluation data for your school.</p>
+        <h1 className="text-2xl font-bold">Faculty Achievements 🏆</h1>
+        <p className="text-red-200 text-sm mt-1">Submit faculty achievements for your school.</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -87,52 +90,51 @@ export default function DHFacultyPerformance() {
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Academic Period</label>
-            <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
+            <div className="mt-1 w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-2 text-sm text-gray-500">
+              {(() => {
+                const p = periods.find((pd) => pd.id == form.academic_period_id);
+                return p ? `${p.school_year} - ${p.semester} Semester` : "Loading current period...";
+              })()}
+              <p className="text-xs text-gray-400 mt-1">Set automatically to the current academic period — cannot be changed here.</p>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Faculty Name</label>
+            <input type="text" name="faculty_name" value={form.faculty_name} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="Full name..." />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Achievement Title</label>
+            <input type="text" name="achievement_title" value={form.achievement_title} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="e.g. Best Researcher Award..." />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Type</label>
+            <select name="type" value={form.type} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-              <option value="">Select period...</option>
-              {periods.map(p => <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>)}
+              <option value="research">Research</option>
+              <option value="publication">Publication</option>
+              <option value="award">Award</option>
+              <option value="certification">Certification</option>
+              <option value="training">Training</option>
+              <option value="other">Other</option>
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Total Faculty</label>
-            <input type="number" name="total_faculty" value={form.total_faculty} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Full Time</label>
-            <input type="number" name="full_time" value={form.full_time} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Part Time</label>
-            <input type="number" name="part_time" value={form.part_time} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Avg Evaluation Score</label>
-            <input type="number" name="average_evaluation_score" value={form.average_evaluation_score} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0.00" step="0.01" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">With Masters</label>
-            <input type="number" name="with_masters" value={form.with_masters} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">With Doctorate</label>
-            <input type="number" name="with_doctorate" value={form.with_doctorate} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">With Board License</label>
-            <input type="number" name="with_board_license" value={form.with_board_license} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
+            <label className="text-sm font-medium text-gray-700">Date Awarded</label>
+            <input type="date" name="date_awarded" value={form.date_awarded} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" />
           </div>
           <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-700">Notes (optional)</label>
-            <textarea name="notes" value={form.notes} onChange={handleChange}
+            <label className="text-sm font-medium text-gray-700">Awarding Body</label>
+            <input type="text" name="awarding_body" value={form.awarding_body} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="e.g. CHED, DOST..." />
+          </div>
+          <div className="col-span-2">
+            <label className="text-sm font-medium text-gray-700">Description (optional)</label>
+            <textarea name="description" value={form.description} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              rows={3} placeholder="Add any notes here..." />
+              rows={3} placeholder="Brief description..." />
           </div>
         </div>
         <div className="flex gap-2 mt-4">
@@ -141,7 +143,7 @@ export default function DHFacultyPerformance() {
             {loading ? "Saving..." : editId ? "Update Submission" : "Submit"}
           </button>
           {editId && (
-            <button onClick={() => { setEditId(null); setForm({ academic_period_id: "", total_faculty: "", full_time: "", part_time: "", average_evaluation_score: "", with_masters: "", with_doctorate: "", with_board_license: "", notes: "" }); }}
+            <button onClick={() => { setEditId(null); setForm({ academic_period_id: activePeriodId, faculty_name: "", achievement_title: "", type: "other", date_awarded: "", awarding_body: "", description: "" }); }}
               className="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">
               Cancel
             </button>
@@ -155,11 +157,10 @@ export default function DHFacultyPerformance() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Period</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Total Faculty</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Full Time</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Part Time</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Avg Score</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Faculty</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Achievement</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Type</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Date</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Action</th>
               </tr>
@@ -167,11 +168,10 @@ export default function DHFacultyPerformance() {
             <tbody>
               {submissions.map((row) => (
                 <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-3 px-4">{row.academic_period?.school_year} - {row.academic_period?.semester}</td>
-                  <td className="py-3 px-4">{row.total_faculty}</td>
-                  <td className="py-3 px-4">{row.full_time}</td>
-                  <td className="py-3 px-4">{row.part_time}</td>
-                  <td className="py-3 px-4 text-green-600 font-semibold">{row.average_evaluation_score}</td>
+                  <td className="py-3 px-4">{row.faculty_name}</td>
+                  <td className="py-3 px-4">{row.achievement_title}</td>
+                  <td className="py-3 px-4 capitalize">{row.type}</td>
+                  <td className="py-3 px-4">{row.date_awarded ?? "—"}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
                       ${row.status === 'approved' ? 'bg-green-100 text-green-700' :

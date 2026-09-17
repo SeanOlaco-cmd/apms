@@ -4,6 +4,7 @@ import api from "../../api/axios";
 export default function DHStudentPerformance() {
   const user = JSON.parse(localStorage.getItem("user"));
   const [periods, setPeriods] = useState([]);
+  const activePeriodId = periods.find((p) => p.is_active)?.id || "";
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
@@ -24,7 +25,13 @@ export default function DHStudentPerformance() {
   });
 
   useEffect(() => {
-    api.get("/academic-periods").then((res) => setPeriods(res.data));
+    api.get("/academic-periods").then((res) => {
+      setPeriods(res.data);
+      const active = res.data.find((p) => p.is_active);
+      if (active) {
+        setForm((f) => (f.academic_period_id ? f : { ...f, academic_period_id: active.id }));
+      }
+    });
     loadData();
   }, []);
 
@@ -66,7 +73,7 @@ export default function DHStudentPerformance() {
         await api.post("/student-performance", { ...form, school_id: user.school_id, program_id: user.program_id });
         setSuccess("Student performance data submitted!");
       }
-      setForm({ academic_period_id: "", total_students: "", passing: "", failing: "", incomplete: "", dropped: "", passing_rate: "", average_gwa: "", latin_honors: "", notes: "" });
+      setForm({ academic_period_id: activePeriodId, total_students: "", passing: "", failing: "", incomplete: "", dropped: "", passing_rate: "", average_gwa: "", latin_honors: "", notes: "" });
       loadData();
     } catch {
       setError("Failed to submit. Please check all fields.");
@@ -89,11 +96,13 @@ export default function DHStudentPerformance() {
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Academic Period</label>
-            <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-              <option value="">Select period...</option>
-              {periods.map(p => <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>)}
-            </select>
+            <div className="mt-1 w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-2 text-sm text-gray-500">
+              {(() => {
+                const p = periods.find((pd) => pd.id == form.academic_period_id);
+                return p ? `${p.school_year} - ${p.semester} Semester` : "Loading current period...";
+              })()}
+              <p className="text-xs text-gray-400 mt-1">Set automatically to the current academic period — cannot be changed here.</p>
+            </div>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Students</label>
@@ -148,7 +157,7 @@ export default function DHStudentPerformance() {
             {loading ? "Saving..." : editId ? "Update Submission" : "Submit"}
           </button>
           {editId && (
-            <button onClick={() => { setEditId(null); setForm({ academic_period_id: "", total_students: "", passing: "", failing: "", incomplete: "", dropped: "", passing_rate: "", average_gwa: "", latin_honors: "", notes: "" }); }}
+            <button onClick={() => { setEditId(null); setForm({ academic_period_id: activePeriodId, total_students: "", passing: "", failing: "", incomplete: "", dropped: "", passing_rate: "", average_gwa: "", latin_honors: "", notes: "" }); }}
               className="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">
               Cancel
             </button>

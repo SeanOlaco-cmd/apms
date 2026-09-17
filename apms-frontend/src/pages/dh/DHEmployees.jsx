@@ -3,6 +3,7 @@ import api from "../../api/axios";
 
 export default function DHEmployees() {
   const [periods, setPeriods] = useState([]);
+  const activePeriodId = periods.find((p) => p.is_active)?.id || "";
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
@@ -10,7 +11,7 @@ export default function DHEmployees() {
   const [editId, setEditId] = useState(null);
 
   const emptyForm = {
-    academic_period_id: "",
+    academic_period_id: activePeriodId,
     employee_name: "",
     position: "",
     employment_type: "",
@@ -18,7 +19,13 @@ export default function DHEmployees() {
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
-    api.get("/academic-periods").then((res) => setPeriods(res.data));
+    api.get("/academic-periods").then((res) => {
+      setPeriods(res.data);
+      const active = res.data.find((p) => p.is_active);
+      if (active) {
+        setForm((f) => (f.academic_period_id ? f : { ...f, academic_period_id: active.id }));
+      }
+    });
     loadData();
   }, []);
 
@@ -89,11 +96,13 @@ export default function DHEmployees() {
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Academic Period</label>
-            <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-              <option value="">Select period...</option>
-              {periods.map(p => <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>)}
-            </select>
+            <div className="mt-1 w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-2 text-sm text-gray-500">
+              {(() => {
+                const p = periods.find((pd) => pd.id == form.academic_period_id);
+                return p ? `${p.school_year} - ${p.semester} Semester` : "Loading current period...";
+              })()}
+              <p className="text-xs text-gray-400 mt-1">Set automatically to the current academic period — cannot be changed here.</p>
+            </div>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Employee Name</label>
