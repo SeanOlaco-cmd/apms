@@ -53,29 +53,11 @@ export default function DHDashboard() {
           <h3 className="font-semibold text-gray-800">Faculty Performance</h3>
           <p className="text-gray-400 text-sm mt-1">Input faculty evaluation data</p>
         </div>
-        <div onClick={() => navigate("/dh/workforce")}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
-          <div className="text-3xl mb-3">👥</div>
-          <h3 className="font-semibold text-gray-800">Workforce Needs</h3>
-          <p className="text-gray-400 text-sm mt-1">Input workforce requirements</p>
-        </div>
         <div onClick={() => navigate("/dh/achievements")}
           className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
           <div className="text-3xl mb-3">🏆</div>
           <h3 className="font-semibold text-gray-800">Achievements</h3>
           <p className="text-gray-400 text-sm mt-1">Input faculty achievements</p>
-        </div>
-        <div onClick={() => navigate("/dh/accreditation")}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
-          <div className="text-3xl mb-3">📜</div>
-          <h3 className="font-semibold text-gray-800">Accreditation</h3>
-          <p className="text-gray-400 text-sm mt-1">Input accreditation status</p>
-        </div>
-        <div onClick={() => navigate("/dh/partnerships")}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
-          <div className="text-3xl mb-3">🤝</div>
-          <h3 className="font-semibold text-gray-800">Partnerships</h3>
-          <p className="text-gray-400 text-sm mt-1">Input corporate partnerships</p>
         </div>
         <div onClick={() => navigate("/dh/student-performance")}
           className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
