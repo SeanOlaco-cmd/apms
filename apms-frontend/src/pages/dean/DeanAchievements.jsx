@@ -1,144 +1,51 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import api from "../../api/axios";
 
 export default function DeanAchievements() {
-  const [periods, setPeriods] = useState([]);
   const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [rejectId, setRejectId] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
 
-  const [form, setForm] = useState({
-    academic_period_id: "",
-    faculty_name: "",
-    achievement_title: "",
-    type: "",
-    date_awarded: "",
-    awarding_body: "",
-    description: "",
-  });
-
-  useEffect(() => {
-    api.get("/academic-periods").then((res) => setPeriods(res.data));
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     const res = await api.get("/achievements");
     setSubmissions(res.data);
+    setLoading(false);
   };
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const resetForm = () => setForm({
-    academic_period_id: "", faculty_name: "", achievement_title: "", type: "",
-    date_awarded: "", awarding_body: "", description: "",
-  });
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError("");
-    setSuccess("");
-    try {
-      await api.post("/achievements", form);
-      setSuccess("Submitted for VPAA review! This entry is now locked.");
-      resetForm();
-      loadData();
-    } catch {
-      setError("Failed to submit. Please check all fields.");
-    } finally {
-      setLoading(false);
-    }
+  const handleApprove = async (id) => {
+    await api.put(`/achievements/${id}/review`, { status: "approved" });
+    loadData();
   };
 
-  const statusBadge = (status) => (
-    <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
-      ${status === 'approved' ? 'bg-green-100 text-green-700' :
-        status === 'rejected' ? 'bg-red-100 text-red-700' :
-        'bg-yellow-100 text-yellow-700'}`}>
-      {status}
-    </span>
-  );
+  const handleReject = async (id) => {
+    await api.put(`/achievements/${id}/review`, { status: "rejected", rejection_reason: rejectReason });
+    setRejectId(null);
+    setRejectReason("");
+    loadData();
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Faculty & Departmental Achievements 🏆</h1>
-        <p className="text-red-200 text-sm mt-1">Submit achievement records for your school. VPAA reviews and approves.</p>
+        <h1 className="text-2xl font-bold">Achievement Submissions 🏆</h1>
+        <p className="text-red-200 text-sm mt-1">Review and approve faculty achievement data.</p>
       </div>
-
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">New Submission</h3>
-        {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg mb-4">{success}</div>}
-        {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-700">Academic Period</label>
-            <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-              <option value="">Select period...</option>
-              {periods.map(p => <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Faculty Name</label>
-            <input type="text" name="faculty_name" value={form.faculty_name} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="Juan Dela Cruz" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Type</label>
-            <select name="type" value={form.type} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-              <option value="">Select type...</option>
-              <option value="research">Research</option>
-              <option value="publication">Publication</option>
-              <option value="award">Award</option>
-              <option value="certification">Certification</option>
-              <option value="training">Training</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-700">Achievement Title</label>
-            <input type="text" name="achievement_title" value={form.achievement_title} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="Best Paper Award" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Date Awarded</label>
-            <input type="date" name="date_awarded" value={form.date_awarded} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Awarding Body</label>
-            <input type="text" name="awarding_body" value={form.awarding_body} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="e.g. CHED" />
-          </div>
-          <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-700">Description (optional)</label>
-            <textarea name="description" value={form.description} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              rows={3} placeholder="Add details here..." />
-          </div>
-        </div>
-        <div className="flex gap-2 mt-4">
-          <button onClick={handleSubmit} disabled={loading}
-            className="bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition disabled:opacity-50">
-            {loading ? "Saving..." : "Submit"}
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">Your Submissions</h3>
-        {submissions.length === 0 ? <p className="text-gray-400 text-sm">No submissions yet.</p> : (
+        {loading ? <p className="text-gray-400 text-sm">Loading...</p>
+        : submissions.length === 0 ? <p className="text-gray-400 text-sm">No submissions yet.</p>
+        : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Faculty</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Title</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Achievement</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Type</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Date</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -147,10 +54,31 @@ export default function DeanAchievements() {
                   <td className="py-3 px-4">{row.faculty_name}</td>
                   <td className="py-3 px-4">{row.achievement_title}</td>
                   <td className="py-3 px-4 capitalize">{row.type}</td>
-                  <td className="py-3 px-4">{row.date_awarded}</td>
+                  <td className="py-3 px-4">{row.date_awarded ?? "—"}</td>
                   <td className="py-3 px-4">
-                    {statusBadge(row.status)}
-                    {row.status === 'rejected' && <p className="text-red-500 text-xs mt-1">{row.rejection_reason}</p>}
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
+                      ${row.status === 'approved' ? 'bg-green-100 text-green-700' :
+                        row.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'}`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    {row.status === 'pending' && (
+                      <div className="flex gap-2">
+                        <button onClick={() => handleApprove(row.id)}
+                          className="bg-green-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-green-600 transition">
+                          Approve
+                        </button>
+                        <button onClick={() => setRejectId(row.id)}
+                          className="bg-red-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-red-600 transition">
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                    {row.status === 'rejected' && (
+                      <p className="text-red-500 text-xs">{row.rejection_reason}</p>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -158,6 +86,26 @@ export default function DeanAchievements() {
           </table>
         )}
       </div>
+      {rejectId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">Reason for Rejection</h3>
+            <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
+              rows={4} placeholder="Enter reason for rejection..." />
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => handleReject(rejectId)}
+                className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition">
+                Confirm Reject
+              </button>
+              <button onClick={() => { setRejectId(null); setRejectReason(""); }}
+                className="bg-gray-200 text-gray-700 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

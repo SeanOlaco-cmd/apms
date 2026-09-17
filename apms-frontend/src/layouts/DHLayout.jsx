@@ -10,6 +10,7 @@ const navItems = [
   { label: "Achievements", icon: "🏆", path: "/dh/achievements" },
   { label: "Board Exam Results", icon: "📝", path: "/dh/board-exam" },
   { label: "Student Performance", icon: "🎓", path: "/dh/student-performance" },
+  { label: "Employees", icon: "🧑‍💼", path: "/dh/employees" },
 ];
 
 export default function DHLayout() {
@@ -26,7 +27,6 @@ export default function DHLayout() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
       <div className="w-64 min-h-screen bg-[#7b1113] flex flex-col">
         <div className="p-6 border-b border-[#5e0d0f]">
           <h1 className="text-white font-bold text-xl">APMS</h1>
@@ -36,7 +36,7 @@ export default function DHLayout() {
           <p className="text-white font-semibold text-sm">Academic Performance</p>
           <p className="text-red-300 text-xs">Monitoring System</p>
         </div>
-        <nav className="flex-1 p-3 flex flex-col gap-1">
+        <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto">
           {navItems.map((item) => (
             <button
               key={item.path}
@@ -54,6 +54,12 @@ export default function DHLayout() {
         </nav>
         <div className="p-3 border-t border-[#5e0d0f]">
           <button
+            onClick={() => navigate("/dh/change-password")}
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"
+          >
+            <span>🔒</span> Change Password
+          </button>
+          <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"
           >
@@ -62,7 +68,6 @@ export default function DHLayout() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
           <h2 className="text-lg font-semibold text-gray-800">Department Head Portal</h2>

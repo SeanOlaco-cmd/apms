@@ -26,12 +26,13 @@ export default function DeanDashboard() {
     }
   }, [navigate]);
 
-  // These 5 are the categories Dean actually submits and VPAA approves.
-  // Enrollment/retention/shiftee-transferee are Registrar's data and
-  // don't go through a Dean-facing approval status, so they're excluded here.
+  // Backend already scopes all 8 of these to the Dean's own school.
   const loadStats = async () => {
     try {
-      const [facultyPerf, achievements, boardExam, studentPerf, employees] = await Promise.all([
+      const [enrollment, retention, shiftee, facultyPerf, achievements, boardExam, studentPerf, employees] = await Promise.all([
+        api.get("/enrollment"),
+        api.get("/retention"),
+        api.get("/shiftee-transferee"),
         api.get("/faculty-performance"),
         api.get("/achievements"),
         api.get("/board-exam-results"),
@@ -40,11 +41,9 @@ export default function DeanDashboard() {
       ]);
 
       const allData = [
-        ...facultyPerf.data,
-        ...achievements.data,
-        ...boardExam.data,
-        ...studentPerf.data,
-        ...employees.data,
+        ...enrollment.data, ...retention.data, ...shiftee.data,
+        ...facultyPerf.data, ...achievements.data, ...boardExam.data,
+        ...studentPerf.data, ...employees.data,
       ];
 
       setStats({
@@ -62,15 +61,14 @@ export default function DeanDashboard() {
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
         <h1 className="text-2xl font-bold">Welcome, {user?.name}! 👋</h1>
         <p className="text-red-200 text-sm mt-1">
-          Submit your school's data and track VPAA review status.
+          Review and approve submissions from your department heads.
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="text-3xl mb-3">⏳</div>
-          <p className="text-gray-500 text-xs font-medium uppercase">Pending Review</p>
+          <p className="text-gray-500 text-xs font-medium uppercase">Pending Approval</p>
           <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -85,14 +83,13 @@ export default function DeanDashboard() {
         </div>
       </div>
 
-      {/* Quick Links */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">Quick Access</h3>
+        <h3 className="text-base font-semibold text-gray-800 mb-4">Review Submissions</h3>
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Enrollment (view)", icon: "📋", path: "/dean/enrollment" },
-            { label: "Retention (view)", icon: "📈", path: "/dean/retention" },
-            { label: "Shiftee & Transferee (view)", icon: "🔄", path: "/dean/shiftee-transferee" },
+            { label: "Enrollment", icon: "📋", path: "/dean/enrollment" },
+            { label: "Retention", icon: "📈", path: "/dean/retention" },
+            { label: "Shiftee & Transferee", icon: "🔄", path: "/dean/shiftee-transferee" },
             { label: "Faculty Performance", icon: "👨‍🏫", path: "/dean/faculty-performance" },
             { label: "Achievements", icon: "🏆", path: "/dean/achievements" },
             { label: "Board Exam Results", icon: "📝", path: "/dean/board-exam" },

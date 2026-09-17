@@ -22,22 +22,25 @@ export default function VPAADashboard() {
     }
   }, [navigate]);
 
+  // Informational only — VPAA doesn't approve any of these anymore
+  // (Dean does), this is just a system-wide status overview.
   const loadStats = async () => {
     try {
-      const [enrollment, retention, studentPerf, boardExam, classMonitoring] = await Promise.all([
+      const [enrollment, retention, shiftee, facultyPerf, achievements, boardExam, studentPerf, employees] = await Promise.all([
         api.get("/enrollment"),
         api.get("/retention"),
-        api.get("/student-performance"),
+        api.get("/shiftee-transferee"),
+        api.get("/faculty-performance"),
+        api.get("/achievements"),
         api.get("/board-exam-results"),
-        api.get("/class-monitoring"),
+        api.get("/student-performance"),
+        api.get("/employees"),
       ]);
 
       const allData = [
-        ...enrollment.data,
-        ...retention.data,
-        ...studentPerf.data,
-        ...boardExam.data,
-        ...classMonitoring.data,
+        ...enrollment.data, ...retention.data, ...shiftee.data,
+        ...facultyPerf.data, ...achievements.data, ...boardExam.data,
+        ...studentPerf.data, ...employees.data,
       ];
 
       setStats({
@@ -55,15 +58,14 @@ export default function VPAADashboard() {
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
         <h1 className="text-2xl font-bold">Welcome, {user?.name}! 👋</h1>
         <p className="text-red-200 text-sm mt-1">
-          VPAA Portal — View all academic data and manage class monitoring.
+          VPAA Portal — View all academic data (read-only) and manage class monitoring.
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="text-3xl mb-3">⏳</div>
-          <p className="text-gray-500 text-xs font-medium uppercase">Pending</p>
+          <p className="text-gray-500 text-xs font-medium uppercase">Pending (system-wide)</p>
           <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -78,7 +80,6 @@ export default function VPAADashboard() {
         </div>
       </div>
 
-      {/* Quick Links */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-base font-semibold text-gray-800 mb-4">Quick Access</h3>
         <div className="grid grid-cols-3 gap-4">
@@ -91,6 +92,7 @@ export default function VPAADashboard() {
             { label: "Board Exam Results", icon: "📝", path: "/vpaa/board-exam" },
             { label: "Class Monitoring", icon: "📓", path: "/vpaa/class-monitoring" },
             { label: "Student Performance", icon: "🎓", path: "/vpaa/student-performance" },
+            { label: "Employees", icon: "🧑‍💼", path: "/vpaa/employees" },
             { label: "Backup & Recovery", icon: "💾", path: "/vpaa/backup" },
           ].map((item) => (
             <div key={item.path} onClick={() => navigate(item.path)}

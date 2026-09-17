@@ -17,22 +17,20 @@ export default function Login() {
     try {
       const res = await api.post("/login", { email, password });
       localStorage.setItem("token", res.data.token);
-localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("user", JSON.stringify(res.data.user));
 
-const role = res.data.user.role;
-if (role === "president") {
-  navigate("/dashboard");
-} else if (role === "dean") {
-  navigate("/dean/dashboard");
-} else if (role === "registrar") {
-  navigate("/registrar/dashboard");
-} else if (role === "vpaa") {
-  navigate("/vpaa/dashboard");
-} else if (role === "system_admin") {
-  navigate("/admin/dashboard");
-} else if (role === "department_head") {
-  navigate("/dh/dashboard");
-}
+      const role = res.data.user.role;
+      if (role === "president") {
+        navigate("/dashboard");
+      } else if (role === "dean") {
+        navigate("/dean/dashboard");
+      } else if (role === "vpaa") {
+        navigate("/vpaa/dashboard");
+      } else if (role === "system_admin") {
+        navigate("/admin/dashboard");
+      } else if (role === "department_head") {
+        navigate("/dh/dashboard");
+      }
     } catch {
       setError("Invalid email or password.");
     } finally {

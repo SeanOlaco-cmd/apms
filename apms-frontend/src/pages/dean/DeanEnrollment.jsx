@@ -2,30 +2,27 @@ import { useEffect, useState } from "react";
 import api from "../../api/axios";
 
 export default function DeanEnrollment() {
-  const user = JSON.parse(localStorage.getItem("user"));
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rejectId, setRejectId] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
+  // Backend already scopes this to the Dean's own school.
   const loadData = async () => {
     const res = await api.get("/enrollment");
-    const mine = res.data.filter(d => d.school_id == user.school_id);
-    setSubmissions(mine);
+    setSubmissions(res.data);
     setLoading(false);
   };
 
   const handleApprove = async (id) => {
-    await api.put(`/enrollment/${id}`, { status: "approved", approved_by: user.id, approved_at: new Date().toISOString() });
+    await api.put(`/enrollment/${id}/review`, { status: "approved" });
     loadData();
   };
 
   const handleReject = async (id) => {
-    await api.put(`/enrollment/${id}`, { status: "rejected", rejection_reason: rejectReason });
+    await api.put(`/enrollment/${id}/review`, { status: "rejected", rejection_reason: rejectReason });
     setRejectId(null);
     setRejectReason("");
     loadData();
@@ -37,13 +34,10 @@ export default function DeanEnrollment() {
         <h1 className="text-2xl font-bold">Enrollment Submissions 📋</h1>
         <p className="text-red-200 text-sm mt-1">Review and approve enrollment data from your department heads.</p>
       </div>
-
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        {loading ? (
-          <p className="text-gray-400 text-sm">Loading...</p>
-        ) : submissions.length === 0 ? (
-          <p className="text-gray-400 text-sm">No submissions yet.</p>
-        ) : (
+        {loading ? <p className="text-gray-400 text-sm">Loading...</p>
+        : submissions.length === 0 ? <p className="text-gray-400 text-sm">No submissions yet.</p>
+        : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
@@ -95,19 +89,13 @@ export default function DeanEnrollment() {
           </table>
         )}
       </div>
-
-      {/* Reject Modal */}
       {rejectId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h3 className="text-base font-semibold text-gray-800 mb-4">Reason for Rejection</h3>
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
+            <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              rows={4}
-              placeholder="Enter reason for rejection..."
-            />
+              rows={4} placeholder="Enter reason for rejection..." />
             <div className="flex gap-2 mt-4">
               <button onClick={() => handleReject(rejectId)}
                 className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition">

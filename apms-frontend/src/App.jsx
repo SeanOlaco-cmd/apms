@@ -5,7 +5,6 @@ import DashboardLayout from './layouts/DashboardLayout'
 import DHLayout from './layouts/DHLayout'
 import DeanLayout from './layouts/DeanLayout'
 import VPAALayout from './layouts/VPAALayout'
-import RegistrarLayout from './layouts/RegistrarLayout'
 import DHDashboard from './pages/dh/DHDashboard'
 import DHEnrollment from './pages/dh/DHEnrollment'
 import DHRetention from './pages/dh/DHRetention'
@@ -14,6 +13,7 @@ import DHAchievements from './pages/dh/DHAchievements'
 import DHStudentPerformance from './pages/dh/DHStudentPerformance'
 import DHBoardExam from './pages/dh/DHBoardExam'
 import DHShifteeTransferee from './pages/dh/DHShifteeTransferee'
+import DHEmployees from './pages/dh/DHEmployees'
 import DeanDashboard from './pages/dean/DeanDashboard'
 import DeanEnrollment from './pages/dean/DeanEnrollment'
 import DeanRetention from './pages/dean/DeanRetention'
@@ -22,6 +22,7 @@ import DeanAchievements from './pages/dean/DeanAchievements'
 import DeanStudentPerformance from './pages/dean/DeanStudentPerformance'
 import DeanBoardExam from './pages/dean/DeanBoardExam'
 import DeanShifteeTransferee from './pages/dean/DeanShifteeTransferee'
+import DeanEmployees from './pages/dean/DeanEmployees'
 import VPAADashboard from './pages/vpaa/VPAADashboard'
 import VPAAEnrollment from './pages/vpaa/VPAAEnrollment'
 import VPAARetention from './pages/vpaa/VPAARetention'
@@ -31,12 +32,12 @@ import VPAAAchievements from './pages/vpaa/VPAAAchievements'
 import VPAABoardExam from './pages/vpaa/VPAABoardExam'
 import VPAAClassMonitoring from './pages/vpaa/VPAAClassMonitoring'
 import VPAAStudentPerformance from './pages/vpaa/VPAAStudentPerformance'
+import VPAAEmployees from './pages/vpaa/VPAAEmployees'
 import VPAAUsers from './pages/vpaa/VPAAUsers'
 import VPAABackup from './pages/vpaa/VPAABackup'
-import RegistrarDashboard from './pages/registrar/RegistrarDashboard'
-import RegistrarEnrollment from './pages/registrar/RegistrarEnrollment'
-import RegistrarRetention from './pages/registrar/RegistrarRetention'
-import RegistrarShifteeTransferee from './pages/registrar/RegistrarShifteeTransferee'
+import SystemAdminLayout from './layouts/SystemAdminLayout'
+import SystemAdminDashboard from './pages/admin/SystemAdminDashboard'
+import SystemAdminUsers from './pages/admin/SystemAdminUsers'
 import ChangePassword from './pages/ChangePassword'
 import Enrollment from './pages/Enrollment'
 import Retention from './pages/Retention'
@@ -46,11 +47,6 @@ import StudentPerformance from './pages/StudentPerformance'
 import BoardExam from './pages/BoardExam'
 import ClassMonitoring from './pages/ClassMonitoring'
 import ShifteeTransferee from './pages/ShifteeTransferee'
-import DeanEmployees from './pages/dean/DeanEmployees'
-import VPAAEmployees from './pages/vpaa/VPAAEmployees'
-import SystemAdminLayout from './layouts/SystemAdminLayout'
-import SystemAdminDashboard from './pages/admin/SystemAdminDashboard'
-import SystemAdminUsers from './pages/admin/SystemAdminUsers'
 
 function App() {
   return (
@@ -72,7 +68,7 @@ function App() {
         <Route path="change-password" element={<ChangePassword />} />
       </Route>
 
-      {/* Dean Routes */}
+      {/* Dean Routes — pure approver again */}
       <Route path="/dean" element={<DeanLayout />}>
         <Route path="dashboard" element={<DeanDashboard />} />
         <Route path="enrollment" element={<DeanEnrollment />} />
@@ -82,11 +78,11 @@ function App() {
         <Route path="achievements" element={<DeanAchievements />} />
         <Route path="board-exam" element={<DeanBoardExam />} />
         <Route path="student-performance" element={<DeanStudentPerformance />} />
-        <Route path="change-password" element={<ChangePassword />} />
         <Route path="employees" element={<DeanEmployees />} />
+        <Route path="change-password" element={<ChangePassword />} />
       </Route>
 
-      {/* VPAA Routes */}
+      {/* VPAA Routes — read-only oversight on the 8 DH/Dean categories */}
       <Route path="/vpaa" element={<VPAALayout />}>
         <Route path="dashboard" element={<VPAADashboard />} />
         <Route path="enrollment" element={<VPAAEnrollment />} />
@@ -97,23 +93,13 @@ function App() {
         <Route path="board-exam" element={<VPAABoardExam />} />
         <Route path="class-monitoring" element={<VPAAClassMonitoring />} />
         <Route path="student-performance" element={<VPAAStudentPerformance />} />
+        <Route path="employees" element={<VPAAEmployees />} />
         <Route path="users" element={<VPAAUsers />} />
         <Route path="backup" element={<VPAABackup />} />
         <Route path="change-password" element={<ChangePassword />} />
-        <Route path="employees" element={<VPAAEmployees />} />
       </Route>
 
-      {/* Registrar Routes */}
-      <Route path="/registrar" element={<RegistrarLayout />}>
-        <Route path="dashboard" element={<RegistrarDashboard />} />
-        <Route path="enrollment" element={<RegistrarEnrollment />} />
-        <Route path="retention" element={<RegistrarRetention />} />
-        <Route path="shiftee-transferee" element={<RegistrarShifteeTransferee />} />
-        <Route path="change-password" element={<ChangePassword />} />
-      </Route>
-
-      {/* Department Head Routes — kept temporarily; remove once all DH
-          accounts are confirmed migrated to registrar/dean */}
+      {/* Department Head Routes — back per presidential decree */}
       <Route path="/dh" element={<DHLayout />}>
         <Route path="dashboard" element={<DHDashboard />} />
         <Route path="enrollment" element={<DHEnrollment />} />
@@ -123,6 +109,8 @@ function App() {
         <Route path="achievements" element={<DHAchievements />} />
         <Route path="board-exam" element={<DHBoardExam />} />
         <Route path="student-performance" element={<DHStudentPerformance />} />
+        <Route path="employees" element={<DHEmployees />} />
+        <Route path="change-password" element={<ChangePassword />} />
       </Route>
 
       {/* System Admin Routes */}
@@ -131,8 +119,6 @@ function App() {
         <Route path="users" element={<SystemAdminUsers />} />
         <Route path="change-password" element={<ChangePassword />} />
       </Route>
-
-
     </Routes>
   )
 }
