@@ -3,6 +3,7 @@
 use App\Http\Controllers\AcademicPeriodController;
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BoardExamResultController;
 use App\Http\Controllers\ClassMonitoringController;
 use App\Http\Controllers\EmployeeController;
@@ -27,48 +28,38 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     // ---------------------------------------------------------------
-    // Registrar-owned data: enrollment, retention, shiftee/transferee.
-    // Registrar submits only — cannot edit/delete once submitted.
-    // VPAA can correct/unlock (update) or remove bad entries (destroy).
-    // Dean and President see it read-only (Dean scoped to own school
-    // is enforced inside the controller, not here).
+    // The 8 categories DH now owns again: enrollment, retention,
+    // shiftee/transferee, faculty performance, achievements, board exam
+    // results, student performance, employees.
+    //
+    // Original 3-tier chain, restored:
+    //   DH submits (scoped to own school+program) — can edit/resubmit
+    //     while status is pending or rejected
+    //   Dean approves/rejects (scoped to own school)
+    //   VPAA + President see everything, read-only
     // ---------------------------------------------------------------
     foreach ([
         'enrollment' => EnrollmentController::class,
         'retention' => RetentionController::class,
         'shiftee-transferee' => ShifteeTransfereeController::class,
-    ] as $uri => $controller) {
-        Route::middleware('role:president,dean,vpaa,registrar')->get("/{$uri}", [$controller, 'index']);
-        Route::middleware('role:president,dean,vpaa,registrar')->get("/{$uri}/{id}", [$controller, 'show']);
-        Route::middleware('role:registrar')->post("/{$uri}", [$controller, 'store']);
-        Route::middleware('role:vpaa')->put("/{$uri}/{id}", [$controller, 'update']);
-        Route::middleware('role:vpaa')->patch("/{$uri}/{id}", [$controller, 'update']);
-        Route::middleware('role:vpaa')->delete("/{$uri}/{id}", [$controller, 'destroy']);
-    }
-
-    // ---------------------------------------------------------------
-    // Dean-owned data: faculty performance, achievements, board exam
-    // results, student performance, employees. Dean submits (scoped
-    // to their own school, enforced in the controller). VPAA
-    // approves/rejects/corrects (update) or removes (destroy).
-    // ---------------------------------------------------------------
-    foreach ([
         'faculty-performance' => FacultyPerformanceController::class,
         'achievements' => AchievementController::class,
         'board-exam-results' => BoardExamResultController::class,
         'student-performance' => StudentPerformanceController::class,
         'employees' => EmployeeController::class,
     ] as $uri => $controller) {
-        Route::middleware('role:president,dean,vpaa')->get("/{$uri}", [$controller, 'index']);
-        Route::middleware('role:president,dean,vpaa')->get("/{$uri}/{id}", [$controller, 'show']);
-        Route::middleware('role:dean')->post("/{$uri}", [$controller, 'store']);
-        Route::middleware('role:vpaa')->put("/{$uri}/{id}", [$controller, 'update']);
-        Route::middleware('role:vpaa')->patch("/{$uri}/{id}", [$controller, 'update']);
-        Route::middleware('role:vpaa')->delete("/{$uri}/{id}", [$controller, 'destroy']);
+        Route::middleware('role:president,dean,vpaa,department_head')->get("/{$uri}", [$controller, 'index']);
+        Route::middleware('role:president,dean,vpaa,department_head')->get("/{$uri}/{id}", [$controller, 'show']);
+        Route::middleware('role:department_head')->post("/{$uri}", [$controller, 'store']);
+        Route::middleware('role:department_head')->put("/{$uri}/{id}", [$controller, 'resubmit']);
+        Route::middleware('role:department_head')->patch("/{$uri}/{id}", [$controller, 'resubmit']);
+        Route::middleware('role:dean')->put("/{$uri}/{id}/review", [$controller, 'review']);
+        Route::middleware('role:dean')->patch("/{$uri}/{id}/review", [$controller, 'review']);
+        Route::middleware('role:dean')->delete("/{$uri}/{id}", [$controller, 'destroy']);
     }
 
     // ---------------------------------------------------------------
-    // VPAA-owned: class monitoring.
+    // VPAA-owned: class monitoring, backup & recovery.
     // ---------------------------------------------------------------
     Route::middleware('role:president,vpaa')->get('/class-monitoring', [ClassMonitoringController::class, 'index']);
     Route::middleware('role:president,vpaa')->get('/class-monitoring/{id}', [ClassMonitoringController::class, 'show']);
@@ -77,23 +68,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:vpaa')->patch('/class-monitoring/{id}', [ClassMonitoringController::class, 'update']);
     Route::middleware('role:vpaa')->delete('/class-monitoring/{id}', [ClassMonitoringController::class, 'destroy']);
 
-
-    // ---------------------------------------------------------------
-    // Backup & Recovery: VPAA only.
-    // ---------------------------------------------------------------
-    Route::middleware('role:vpaa')->group(function () {
-    Route::get('/backups', [\App\Http\Controllers\BackupController::class, 'index']);
-    Route::post('/backups', [\App\Http\Controllers\BackupController::class, 'store']);
-    Route::get('/backups/{filename}/download', [\App\Http\Controllers\BackupController::class, 'download']);
-    Route::post('/backups/{filename}/restore', [\App\Http\Controllers\BackupController::class, 'restore']);
-    Route::delete('/backups/{filename}', [\App\Http\Controllers\BackupController::class, 'destroy']);
-    });
-
+    Route::middleware('role:vpaa')->get('/backups', [BackupController::class, 'index']);
+    Route::middleware('role:vpaa')->post('/backups', [BackupController::class, 'store']);
+    Route::middleware('role:vpaa')->get('/backups/{filename}/download', [BackupController::class, 'download']);
+    Route::middleware('role:vpaa')->post('/backups/{filename}/restore', [BackupController::class, 'restore']);
+    Route::middleware('role:vpaa')->delete('/backups/{filename}', [BackupController::class, 'destroy']);
 
     // ---------------------------------------------------------------
     // Reference data: schools, programs, academic periods.
-    // Everyone can read (dropdowns depend on it); only System Admin
-    // can add/edit/remove the underlying reference data.
+    // Everyone reads; only System Admin writes.
     // ---------------------------------------------------------------
     foreach ([
         'schools' => SchoolController::class,
@@ -109,8 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
     }
 
     // ---------------------------------------------------------------
-    // User management: System Admin only. VPAA gets read-only
-    // visibility for oversight, per the VPAA/System Admin split.
+    // User management: System Admin only (writes). VPAA read-only.
     // ---------------------------------------------------------------
     Route::middleware('role:system_admin,vpaa')->get('/users', [UserController::class, 'index']);
     Route::middleware('role:system_admin,vpaa')->get('/users/{id}', [UserController::class, 'show']);

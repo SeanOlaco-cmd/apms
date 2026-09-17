@@ -10,9 +10,12 @@ class EmployeeController extends Controller
     public function index(Request $request)
     {
         $query = Employee::with(['school', 'program', 'academicPeriod']);
+        $user = $request->user();
 
-        if ($request->user()->role === 'dean') {
-            $query->where('school_id', $request->user()->school_id);
+        if ($user->role === 'dean') {
+            $query->where('school_id', $user->school_id);
+        } elseif ($user->role === 'department_head') {
+            $query->where('school_id', $user->school_id)->where('program_id', $user->program_id);
         }
 
         return $query->get();
@@ -20,8 +23,9 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $request->validate([
-            'program_id' => 'nullable|exists:programs,id',
             'academic_period_id' => 'required|exists:academic_periods,id',
             'employee_name' => 'required|string',
             'position' => 'nullable|string',
@@ -29,13 +33,13 @@ class EmployeeController extends Controller
         ]);
 
         $data = Employee::create([
-            'school_id' => $request->user()->school_id, // Dean's own school — never trust client input here
-            'program_id' => $request->program_id,
+            'school_id' => $user->school_id,
+            'program_id' => $user->program_id,
             'academic_period_id' => $request->academic_period_id,
             'employee_name' => $request->employee_name,
             'position' => $request->position,
             'employment_type' => $request->employment_type,
-            'submitted_by' => $request->user()->id,
+            'submitted_by' => $user->id,
             'status' => 'pending',
         ]);
 
@@ -47,17 +51,40 @@ class EmployeeController extends Controller
         return $employee->load(['school', 'program', 'academicPeriod']);
     }
 
-    public function update(Request $request, Employee $employee)
+    public function resubmit(Request $request, Employee $employee)
     {
+        $user = $request->user();
+        abort_unless($employee->submitted_by === $user->id, 403, 'Not your submission.');
+        abort_unless(in_array($employee->status, ['pending', 'rejected']), 403, 'Locked — already approved.');
+
         $request->validate([
-            'status' => 'required|in:pending,approved,rejected',
+            'academic_period_id' => 'sometimes|exists:academic_periods,id',
+            'employee_name' => 'sometimes|string',
+            'position' => 'sometimes|nullable|string',
+            'employment_type' => 'sometimes|in:full_time,part_time',
+        ]);
+
+        $employee->update($request->only([
+            'academic_period_id', 'employee_name', 'position', 'employment_type',
+        ]) + ['status' => 'pending', 'rejection_reason' => null]);
+
+        return response()->json($employee);
+    }
+
+    public function review(Request $request, Employee $employee)
+    {
+        $user = $request->user();
+        abort_unless($employee->school_id === $user->school_id, 403, 'Not your school.');
+
+        $request->validate([
+            'status' => 'required|in:approved,rejected',
             'rejection_reason' => 'required_if:status,rejected|nullable|string',
         ]);
 
         $employee->update([
             'status' => $request->status,
             'rejection_reason' => $request->status === 'rejected' ? $request->rejection_reason : null,
-            'approved_by' => $request->status === 'approved' ? $request->user()->id : null,
+            'approved_by' => $request->status === 'approved' ? $user->id : null,
             'approved_at' => $request->status === 'approved' ? now() : null,
         ]);
 

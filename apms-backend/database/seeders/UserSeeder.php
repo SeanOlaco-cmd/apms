@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\Program;
 
 class UserSeeder extends Seeder
 {
@@ -65,15 +66,42 @@ class UserSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // Registrar — college-wide, replaces the old per-program Department Head accounts
-        User::create([
-            'name' => 'Registrar',
-            'email' => 'registrar@cct.edu.ph',
-            'password' => Hash::make('registrar@cct_2026'),
-            'role' => 'registrar',
-            'school_id' => null,
-            'program_id' => null,
-            'is_active' => true,
-        ]);
+        // Department Heads / Program Coordinators — returning per presidential
+        // decree. Looked up by program CODE, not hardcoded ID, since program
+        // IDs can drift between environments (learned that the hard way once
+        // already on this project).
+        $deptHeads = [
+            ['name' => 'DH - BSCS', 'email' => 'dh.bscs@cct.edu.ph', 'password' => 'cct@bscs2026', 'school_id' => 1, 'program_code' => 'BSCS'],
+            ['name' => 'DH - BSIT', 'email' => 'dh.bsit@cct.edu.ph', 'password' => 'cct@bsit2026', 'school_id' => 1, 'program_code' => 'BSIT'],
+            ['name' => 'DH - BSED English', 'email' => 'dh.bsed.eng@cct.edu.ph', 'password' => 'cct@bsedeng2026', 'school_id' => 2, 'program_code' => 'BSED-ENG'],
+            ['name' => 'DH - BSED Filipino', 'email' => 'dh.bsed.fil@cct.edu.ph', 'password' => 'cct@bsedfil2026', 'school_id' => 2, 'program_code' => 'BSED-FIL'],
+            ['name' => 'DH - BSED Math', 'email' => 'dh.bsed.math@cct.edu.ph', 'password' => 'cct@bsedmath2026', 'school_id' => 2, 'program_code' => 'BSED-MATH'],
+            ['name' => 'DH - BSED Social Studies', 'email' => 'dh.bsed.ss@cct.edu.ph', 'password' => 'cct@bsedss2026', 'school_id' => 2, 'program_code' => 'BSED-SS'],
+            ['name' => 'DH - BSHM', 'email' => 'dh.bshm@cct.edu.ph', 'password' => 'cct@bshm2026', 'school_id' => 3, 'program_code' => 'BSHM'],
+            ['name' => 'DH - BSTM', 'email' => 'dh.bstm@cct.edu.ph', 'password' => 'cct@bstm2026', 'school_id' => 3, 'program_code' => 'BSTM'],
+            ['name' => 'DH - BSBA Marketing', 'email' => 'dh.bsba.mm@cct.edu.ph', 'password' => 'cct@bsbamm2026', 'school_id' => 6, 'program_code' => 'BSBA-MM'],
+            ['name' => 'DH - BSBA HRDM', 'email' => 'dh.bsba.hrdm@cct.edu.ph', 'password' => 'cct@bsbahrdm2026', 'school_id' => 6, 'program_code' => 'BSBA-HRDM'],
+            ['name' => 'DH - BSOA', 'email' => 'dh.bsoa@cct.edu.ph', 'password' => 'cct@bsoa2026', 'school_id' => 6, 'program_code' => 'BSOA'],
+        ];
+
+        foreach ($deptHeads as $dh) {
+            $program = Program::where('code', $dh['program_code'])->first();
+
+            User::create([
+                'name' => $dh['name'],
+                'email' => $dh['email'],
+                'password' => Hash::make($dh['password']),
+                'role' => 'department_head',
+                'school_id' => $dh['school_id'],
+                'program_id' => $program?->id, // null if the code doesn't match — check ProgramSeeder if so
+                'is_active' => true,
+            ]);
+        }
+
+        // NOTE: SAS (BS Psychology, BS Social Work) and SPES don't have DH
+        // accounts here — the original 11 never covered them either, since
+        // those programs were still TBD when this list was first written.
+        // If you want DH coverage for SAS/SPES now that those programs are
+        // confirmed, that's a follow-up addition, not part of this revert.
     }
 }
