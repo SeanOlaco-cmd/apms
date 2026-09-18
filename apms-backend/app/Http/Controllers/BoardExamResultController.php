@@ -63,8 +63,7 @@ class BoardExamResultController extends Controller
     public function resubmit(Request $request, BoardExamResult $boardExamResult)
     {
         $user = $request->user();
-        abort_unless($boardExamResult->submitted_by === $user->id, 403, 'Not your submission.');
-        abort_unless(in_array($boardExamResult->status, ['pending', 'rejected']), 403, 'Locked — already approved.');
+        abort_unless($boardExamResult->status === 'rejected', 403, 'Locked — cannot edit once submitted. Wait for Dean review; you can only edit after a rejection.');
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',

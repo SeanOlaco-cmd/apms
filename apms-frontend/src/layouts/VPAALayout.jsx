@@ -57,7 +57,7 @@ export default function VPAALayout() {
         </nav>
         <div className="p-3 border-t border-[#5e0d0f]">
           <button
-            onClick={() => navigate("/dean/change-password")}
+            onClick={() => navigate("/vpaa/change-password")}
             className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"
           >
             <span>🔒</span> Change Password 

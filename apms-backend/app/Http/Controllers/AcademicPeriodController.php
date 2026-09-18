@@ -22,6 +22,10 @@ class AcademicPeriodController extends Controller
             'is_active' => 'boolean',
         ]);
 
+        if ($request->boolean('is_active')) {
+            AcademicPeriod::query()->update(['is_active' => false]);
+        }
+
         $period = AcademicPeriod::create($request->all());
         return response()->json($period, 201);
     }
@@ -33,6 +37,10 @@ class AcademicPeriodController extends Controller
 
     public function update(Request $request, AcademicPeriod $academicPeriod)
     {
+        if ($request->boolean('is_active')) {
+            AcademicPeriod::query()->where('id', '!=', $academicPeriod->id)->update(['is_active' => false]);
+        }
+
         $academicPeriod->update($request->all());
         return response()->json($academicPeriod);
     }

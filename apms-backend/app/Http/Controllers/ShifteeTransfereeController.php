@@ -63,8 +63,7 @@ class ShifteeTransfereeController extends Controller
     public function resubmit(Request $request, ShifteeTransfereeData $shifteeTransfereeData)
     {
         $user = $request->user();
-        abort_unless($shifteeTransfereeData->submitted_by === $user->id, 403, 'Not your submission.');
-        abort_unless(in_array($shifteeTransfereeData->status, ['pending', 'rejected']), 403, 'Locked — already approved.');
+        abort_unless($shifteeTransfereeData->status === 'rejected', 403, 'Locked — cannot edit once submitted. Wait for Dean review; you can only edit after a rejection.');
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',

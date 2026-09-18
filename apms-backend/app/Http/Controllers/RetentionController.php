@@ -83,7 +83,7 @@ class RetentionController extends Controller
     public function review(Request $request, RetentionRate $retention)
     {
         $user = $request->user();
-        abort_unless($retention->school_id === $user->school_id, 403, 'Not your school.');
+        abort_unless($retention->status === 'rejected', 403, 'Locked — cannot edit once submitted. Wait for Dean review; you can only edit after a rejection.');
 
         $request->validate([
             'status' => 'required|in:approved,rejected',

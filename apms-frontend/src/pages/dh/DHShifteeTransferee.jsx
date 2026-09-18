@@ -188,7 +188,7 @@ export default function DHShifteeTransferee() {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    {(row.status === 'pending' || row.status === 'rejected') && (
+                    {(row.status === 'rejected') && (
                       <button onClick={() => handleEdit(row)}
                         className="bg-blue-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-600 transition">
                         Edit

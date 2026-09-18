@@ -78,7 +78,7 @@ class AchievementController extends Controller
     public function review(Request $request, FacultyAchievement $achievement)
     {
         $user = $request->user();
-        abort_unless($achievement->school_id === $user->school_id, 403, 'Not your school.');
+        abort_unless($achievement->status === 'rejected', 403, 'Locked — cannot edit once submitted. Wait for Dean review; you can only edit after a rejection.');
 
         $request->validate([
             'status' => 'required|in:approved,rejected',

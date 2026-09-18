@@ -59,8 +59,7 @@ class EnrollmentController extends Controller
     public function resubmit(Request $request, EnrollmentData $enrollment)
     {
         $user = $request->user();
-        abort_unless($enrollment->submitted_by === $user->id, 403, 'Not your submission.');
-        abort_unless(in_array($enrollment->status, ['pending', 'rejected']), 403, 'Locked — already approved.');
+        abort_unless($enrollment->status === 'rejected', 403, 'Locked — cannot edit once submitted. Wait for Dean review; you can only edit after a rejection.');
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',

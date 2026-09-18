@@ -33,8 +33,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // results, student performance, employees.
     //
     // Original 3-tier chain, restored:
-    //   DH submits (scoped to own school+program) — can edit/resubmit
-    //     while status is pending or rejected
+    //   DH submits (scoped to own school+program) — locked once submitted;
+    //     can only edit/resubmit if the Dean rejects it
     //   Dean approves/rejects (scoped to own school)
     //   VPAA + President see everything, read-only
     // ---------------------------------------------------------------
@@ -75,13 +75,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:vpaa')->delete('/backups/{filename}', [BackupController::class, 'destroy']);
 
     // ---------------------------------------------------------------
-    // Reference data: schools, programs, academic periods.
+    // Reference data: schools, programs.
     // Everyone reads; only System Admin writes.
     // ---------------------------------------------------------------
     foreach ([
         'schools' => SchoolController::class,
         'programs' => ProgramController::class,
-        'academic-periods' => AcademicPeriodController::class,
     ] as $uri => $controller) {
         Route::get("/{$uri}", [$controller, 'index']);
         Route::get("/{$uri}/{id}", [$controller, 'show']);
@@ -90,6 +89,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('role:system_admin')->patch("/{$uri}/{id}", [$controller, 'update']);
         Route::middleware('role:system_admin')->delete("/{$uri}/{id}", [$controller, 'destroy']);
     }
+
+    // ---------------------------------------------------------------
+    // Academic periods: everyone reads. Write access temporarily also
+    // granted to VPAA (in addition to System Admin) so VPAA can set
+    // the current academic period by hand, until the period-rollover
+    // is automated. TODO: revisit and drop 'vpaa' here once that's built.
+    // ---------------------------------------------------------------
+    Route::get('/academic-periods', [AcademicPeriodController::class, 'index']);
+    Route::get('/academic-periods/{id}', [AcademicPeriodController::class, 'show']);
+    Route::middleware('role:system_admin,vpaa')->post('/academic-periods', [AcademicPeriodController::class, 'store']);
+    Route::middleware('role:system_admin,vpaa')->put('/academic-periods/{id}', [AcademicPeriodController::class, 'update']);
+    Route::middleware('role:system_admin,vpaa')->patch('/academic-periods/{id}', [AcademicPeriodController::class, 'update']);
+    Route::middleware('role:system_admin,vpaa')->delete('/academic-periods/{id}', [AcademicPeriodController::class, 'destroy']);
 
     // ---------------------------------------------------------------
     // User management: System Admin only (writes). VPAA read-only.

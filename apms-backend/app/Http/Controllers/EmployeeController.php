@@ -74,7 +74,7 @@ class EmployeeController extends Controller
     public function review(Request $request, Employee $employee)
     {
         $user = $request->user();
-        abort_unless($employee->school_id === $user->school_id, 403, 'Not your school.');
+        abort_unless($employee->status === 'rejected', 403, 'Locked — cannot edit once submitted. Wait for Dean review; you can only edit after a rejection.');
 
         $request->validate([
             'status' => 'required|in:approved,rejected',

@@ -47,6 +47,7 @@ import StudentPerformance from './pages/StudentPerformance'
 import BoardExam from './pages/BoardExam'
 import ClassMonitoring from './pages/ClassMonitoring'
 import ShifteeTransferee from './pages/ShifteeTransferee'
+import VPAAAcademicPeriods from './pages/vpaa/VPAAAcademicPeriods'
 
 function App() {
   return (
@@ -97,6 +98,7 @@ function App() {
         <Route path="users" element={<VPAAUsers />} />
         <Route path="backup" element={<VPAABackup />} />
         <Route path="change-password" element={<ChangePassword />} />
+        <Route path="academic-periods" element={<VPAAAcademicPeriods />} />
       </Route>
 
       {/* Department Head Routes — back per presidential decree */}
