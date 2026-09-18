@@ -48,6 +48,7 @@ import BoardExam from './pages/BoardExam'
 import ClassMonitoring from './pages/ClassMonitoring'
 import ShifteeTransferee from './pages/ShifteeTransferee'
 import VPAAAcademicPeriods from './pages/vpaa/VPAAAcademicPeriods'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
@@ -67,6 +68,11 @@ function App() {
         <Route path="class-monitoring" element={<ClassMonitoring />} />
         <Route path="student-performance" element={<StudentPerformance />} />
         <Route path="change-password" element={<ChangePassword />} />
+        <Route path="/dashboard" element={
+          <ProtectedRoute allowedRoles={['president']}><DashboardLayout title="Overview" /></ProtectedRoute>
+        }>
+
+        </Route>
       </Route>
 
       {/* Dean Routes — pure approver again */}
@@ -81,6 +87,10 @@ function App() {
         <Route path="student-performance" element={<DeanStudentPerformance />} />
         <Route path="employees" element={<DeanEmployees />} />
         <Route path="change-password" element={<ChangePassword />} />
+         <Route path="/dean" element={
+          <ProtectedRoute allowedRoles={['dean']}><DeanLayout /></ProtectedRoute>
+          }></Route>
+
       </Route>
 
       {/* VPAA Routes — read-only oversight on the 8 DH/Dean categories */}
@@ -99,6 +109,10 @@ function App() {
         <Route path="backup" element={<VPAABackup />} />
         <Route path="change-password" element={<ChangePassword />} />
         <Route path="academic-periods" element={<VPAAAcademicPeriods />} />
+        <Route path="/vpaa" element={
+        <ProtectedRoute allowedRoles={['vpaa']}><VPAALayout /></ProtectedRoute>
+        }></Route>
+
       </Route>
 
       {/* Department Head Routes — back per presidential decree */}
@@ -113,6 +127,10 @@ function App() {
         <Route path="student-performance" element={<DHStudentPerformance />} />
         <Route path="employees" element={<DHEmployees />} />
         <Route path="change-password" element={<ChangePassword />} />
+        <Route path="/dh" element={
+          <ProtectedRoute allowedRoles={['department_head']}><DHLayout /></ProtectedRoute>
+        }></Route>
+
       </Route>
 
       {/* System Admin Routes */}
@@ -120,6 +138,9 @@ function App() {
         <Route path="dashboard" element={<SystemAdminDashboard />} />
         <Route path="users" element={<SystemAdminUsers />} />
         <Route path="change-password" element={<ChangePassword />} />
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['system_admin']}><SystemAdminLayout /></ProtectedRoute>
+        }></Route>
       </Route>
     </Routes>
   )
