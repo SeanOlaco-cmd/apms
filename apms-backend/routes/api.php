@@ -22,51 +22,52 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Self-service, any authenticated role
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     // ---------------------------------------------------------------
-    // The 8 categories DH now owns again: enrollment, retention,
-    // shiftee/transferee, faculty performance, achievements, board exam
-    // results, student performance, employees.
+    // The 8 DH-owned categories.
     //
-    // Original 3-tier chain, restored:
-    //   DH submits (scoped to own school+program) — locked once submitted;
-    //     can only edit/resubmit if the Dean rejects it
-    //   Dean approves/rejects (scoped to own school)
-    //   VPAA + President see everything, read-only
+    // IMPORTANT: the route parameter name MUST match the variable name
+    // in the controller method signature (e.g. {enrollment} ->
+    // review(Request $request, EnrollmentData $enrollment)). Laravel's
+    // implicit route-model binding matches on NAME, not type — a
+    // generic {id} silently injects a blank/wrong model, which is what
+    // made every Dean approval fail. This is the fix.
     // ---------------------------------------------------------------
-    foreach ([
-        'enrollment' => EnrollmentController::class,
-        'retention' => RetentionController::class,
-        'shiftee-transferee' => ShifteeTransfereeController::class,
-        'faculty-performance' => FacultyPerformanceController::class,
-        'achievements' => AchievementController::class,
-        'board-exam-results' => BoardExamResultController::class,
-        'student-performance' => StudentPerformanceController::class,
-        'employees' => EmployeeController::class,
-    ] as $uri => $controller) {
+    foreach (
+        [
+            'enrollment' => ['controller' => EnrollmentController::class, 'param' => 'enrollment'],
+            'retention' => ['controller' => RetentionController::class, 'param' => 'retention'],
+            'shiftee-transferee' => ['controller' => ShifteeTransfereeController::class, 'param' => 'shifteeTransfereeData'],
+            'faculty-performance' => ['controller' => FacultyPerformanceController::class, 'param' => 'facultyPerformance'],
+            'achievements' => ['controller' => AchievementController::class, 'param' => 'achievement'],
+            'board-exam-results' => ['controller' => BoardExamResultController::class, 'param' => 'boardExamResult'],
+            'student-performance' => ['controller' => StudentPerformanceController::class, 'param' => 'studentPerformance'],
+            'employees' => ['controller' => EmployeeController::class, 'param' => 'employee'],
+        ] as $uri => $config
+    ) {
+        $controller = $config['controller'];
+        $param = $config['param'];
+
         Route::middleware('role:president,dean,vpaa,department_head')->get("/{$uri}", [$controller, 'index']);
-        Route::middleware('role:president,dean,vpaa,department_head')->get("/{$uri}/{id}", [$controller, 'show']);
+        Route::middleware('role:president,dean,vpaa,department_head')->get("/{$uri}/{{$param}}", [$controller, 'show']);
         Route::middleware('role:department_head')->post("/{$uri}", [$controller, 'store']);
-        Route::middleware('role:department_head')->put("/{$uri}/{id}", [$controller, 'resubmit']);
-        Route::middleware('role:department_head')->patch("/{$uri}/{id}", [$controller, 'resubmit']);
-        Route::middleware('role:dean')->put("/{$uri}/{id}/review", [$controller, 'review']);
-        Route::middleware('role:dean')->patch("/{$uri}/{id}/review", [$controller, 'review']);
-        Route::middleware('role:dean')->delete("/{$uri}/{id}", [$controller, 'destroy']);
+        Route::middleware('role:department_head')->put("/{$uri}/{{$param}}", [$controller, 'resubmit']);
+        Route::middleware('role:department_head')->patch("/{$uri}/{{$param}}", [$controller, 'resubmit']);
+        Route::middleware('role:dean')->put("/{$uri}/{{$param}}/review", [$controller, 'review']);
+        Route::middleware('role:dean')->patch("/{$uri}/{{$param}}/review", [$controller, 'review']);
+        Route::middleware('role:dean')->delete("/{$uri}/{{$param}}", [$controller, 'destroy']);
     }
 
-    // ---------------------------------------------------------------
     // VPAA-owned: class monitoring, backup & recovery.
-    // ---------------------------------------------------------------
     Route::middleware('role:president,vpaa')->get('/class-monitoring', [ClassMonitoringController::class, 'index']);
-    Route::middleware('role:president,vpaa')->get('/class-monitoring/{id}', [ClassMonitoringController::class, 'show']);
+    Route::middleware('role:president,vpaa')->get('/class-monitoring/{classMonitoring}', [ClassMonitoringController::class, 'show']);
     Route::middleware('role:vpaa')->post('/class-monitoring', [ClassMonitoringController::class, 'store']);
-    Route::middleware('role:vpaa')->put('/class-monitoring/{id}', [ClassMonitoringController::class, 'update']);
-    Route::middleware('role:vpaa')->patch('/class-monitoring/{id}', [ClassMonitoringController::class, 'update']);
-    Route::middleware('role:vpaa')->delete('/class-monitoring/{id}', [ClassMonitoringController::class, 'destroy']);
+    Route::middleware('role:vpaa')->put('/class-monitoring/{classMonitoring}', [ClassMonitoringController::class, 'update']);
+    Route::middleware('role:vpaa')->patch('/class-monitoring/{classMonitoring}', [ClassMonitoringController::class, 'update']);
+    Route::middleware('role:vpaa')->delete('/class-monitoring/{classMonitoring}', [ClassMonitoringController::class, 'destroy']);
 
     Route::middleware('role:vpaa')->get('/backups', [BackupController::class, 'index']);
     Route::middleware('role:vpaa')->post('/backups', [BackupController::class, 'store']);
@@ -74,42 +75,38 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:vpaa')->post('/backups/{filename}/restore', [BackupController::class, 'restore']);
     Route::middleware('role:vpaa')->delete('/backups/{filename}', [BackupController::class, 'destroy']);
 
-    // ---------------------------------------------------------------
-    // Reference data: schools, programs.
-    // Everyone reads; only System Admin writes.
-    // ---------------------------------------------------------------
-    foreach ([
-        'schools' => SchoolController::class,
-        'programs' => ProgramController::class,
-    ] as $uri => $controller) {
+    // Academic periods: everyone reads. System Admin maintains them —
+    // per the Dean's instruction at your defense, NOT VPAA.
+    Route::get('/academic-periods', [AcademicPeriodController::class, 'index']);
+    Route::get('/academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'show']);
+    Route::middleware('role:system_admin')->post('/academic-periods', [AcademicPeriodController::class, 'store']);
+    Route::middleware('role:system_admin')->put('/academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update']);
+    Route::middleware('role:system_admin')->patch('/academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update']);
+    Route::middleware('role:system_admin')->delete('/academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'destroy']);
+
+    // Reference data: schools, programs. Everyone reads; System Admin writes.
+    foreach (
+        [
+            'schools' => ['controller' => SchoolController::class, 'param' => 'school'],
+            'programs' => ['controller' => ProgramController::class, 'param' => 'program'],
+        ] as $uri => $config
+    ) {
+        $controller = $config['controller'];
+        $param = $config['param'];
+
         Route::get("/{$uri}", [$controller, 'index']);
-        Route::get("/{$uri}/{id}", [$controller, 'show']);
+        Route::get("/{$uri}/{{$param}}", [$controller, 'show']);
         Route::middleware('role:system_admin')->post("/{$uri}", [$controller, 'store']);
-        Route::middleware('role:system_admin')->put("/{$uri}/{id}", [$controller, 'update']);
-        Route::middleware('role:system_admin')->patch("/{$uri}/{id}", [$controller, 'update']);
-        Route::middleware('role:system_admin')->delete("/{$uri}/{id}", [$controller, 'destroy']);
+        Route::middleware('role:system_admin')->put("/{$uri}/{{$param}}", [$controller, 'update']);
+        Route::middleware('role:system_admin')->patch("/{$uri}/{{$param}}", [$controller, 'update']);
+        Route::middleware('role:system_admin')->delete("/{$uri}/{{$param}}", [$controller, 'destroy']);
     }
 
-    // ---------------------------------------------------------------
-    // Academic periods: everyone reads. Write access temporarily also
-    // granted to VPAA (in addition to System Admin) so VPAA can set
-    // the current academic period by hand, until the period-rollover
-    // is automated. TODO: revisit and drop 'vpaa' here once that's built.
-    // ---------------------------------------------------------------
-    Route::get('/academic-periods', [AcademicPeriodController::class, 'index']);
-    Route::get('/academic-periods/{id}', [AcademicPeriodController::class, 'show']);
-    Route::middleware('role:system_admin,vpaa')->post('/academic-periods', [AcademicPeriodController::class, 'store']);
-    Route::middleware('role:system_admin,vpaa')->put('/academic-periods/{id}', [AcademicPeriodController::class, 'update']);
-    Route::middleware('role:system_admin,vpaa')->patch('/academic-periods/{id}', [AcademicPeriodController::class, 'update']);
-    Route::middleware('role:system_admin,vpaa')->delete('/academic-periods/{id}', [AcademicPeriodController::class, 'destroy']);
-
-    // ---------------------------------------------------------------
-    // User management: System Admin only (writes). VPAA read-only.
-    // ---------------------------------------------------------------
+    // User management: System Admin only (writes, password EXCLUDED). VPAA read-only.
     Route::middleware('role:system_admin,vpaa')->get('/users', [UserController::class, 'index']);
-    Route::middleware('role:system_admin,vpaa')->get('/users/{id}', [UserController::class, 'show']);
+    Route::middleware('role:system_admin,vpaa')->get('/users/{user}', [UserController::class, 'show']);
     Route::middleware('role:system_admin')->post('/users', [UserController::class, 'store']);
-    Route::middleware('role:system_admin')->put('/users/{id}', [UserController::class, 'update']);
-    Route::middleware('role:system_admin')->patch('/users/{id}', [UserController::class, 'update']);
-    Route::middleware('role:system_admin')->delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::middleware('role:system_admin')->put('/users/{user}', [UserController::class, 'update']);
+    Route::middleware('role:system_admin')->patch('/users/{user}', [UserController::class, 'update']);
+    Route::middleware('role:system_admin')->delete('/users/{user}', [UserController::class, 'destroy']);
 });

@@ -59,9 +59,12 @@ export default function SystemAdminUsers() {
     setSuccess("");
     try {
       if (editUser) {
-        // Don't send an empty password on edit — leaving it blank means "keep current".
-        const payload = { ...form };
-        if (!payload.password) delete payload.password;
+        // Password is NEVER sent on edit — System Admin can't change it,
+        // by design. The key must be omitted entirely, not just blank:
+        // the backend checks $request->has('password'), which is true
+        // even for an empty string. Sending the key at all would 403
+        // every edit, not just password changes.
+        const { password, ...payload } = form;
         await api.put(`/users/${editUser.id}`, payload);
         setSuccess("User updated successfully!");
       } else {
@@ -72,8 +75,8 @@ export default function SystemAdminUsers() {
       setEditUser(null);
       setForm(emptyForm);
       loadData();
-    } catch {
-      setError("Failed to save. Please check all fields.");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save. Please check all fields.");
     }
   };
 
@@ -82,7 +85,7 @@ export default function SystemAdminUsers() {
     setForm({
       name: user.name,
       email: user.email,
-      password: "",
+      password: "", // never sent on edit — see handleSubmit
       role: user.role,
       school_id: user.school_id ?? "",
       program_id: user.program_id ?? "",
@@ -103,7 +106,10 @@ export default function SystemAdminUsers() {
     <div className="flex flex-col gap-6">
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
         <h1 className="text-2xl font-bold">User Management 👤</h1>
-        <p className="text-red-200 text-sm mt-1">Create, edit, activate, and deactivate all user accounts.</p>
+        <p className="text-red-200 text-sm mt-1">
+          Create, edit, activate, and deactivate accounts. Passwords are set once at creation — each account
+          owner changes their own password afterward from their Change Password page.
+        </p>
       </div>
 
       {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg">{success}</div>}
@@ -135,10 +141,23 @@ export default function SystemAdminUsers() {
                 placeholder="email@cct.edu.ph" />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">{editUser ? "New Password (leave blank to keep)" : "Password"}</label>
-              <input type="password" name="password" value={form.password} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-                placeholder="••••••••" />
+              <label className="text-sm font-medium text-gray-700">
+                {editUser ? "Password" : "Initial Password"}
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={editUser ? "" : form.password}
+                onChange={handleChange}
+                disabled={!!editUser}
+                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113] disabled:bg-gray-100 disabled:text-gray-400"
+                placeholder={editUser ? "Not editable — account owner changes their own" : "••••••••"}
+              />
+              {editUser && (
+                <p className="text-xs text-gray-400 mt-1">
+                  System Admin cannot change passwords. The account owner uses their own Change Password page.
+                </p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Role</label>
@@ -147,7 +166,7 @@ export default function SystemAdminUsers() {
                 <option value="president">President</option>
                 <option value="dean">Dean</option>
                 <option value="vpaa">VPAA</option>
-                <option value="registrar">Registrar</option>
+                <option value="department_head">Department Head</option>
                 <option value="system_admin">System Admin</option>
               </select>
             </div>
@@ -158,7 +177,7 @@ export default function SystemAdminUsers() {
                 <option value="">None</option>
                 {schools.map(s => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
               </select>
-              <p className="text-xs text-gray-400 mt-1">Required for Dean accounts.</p>
+              <p className="text-xs text-gray-400 mt-1">Required for Dean and Department Head accounts.</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Program</label>
@@ -167,6 +186,7 @@ export default function SystemAdminUsers() {
                 <option value="">None</option>
                 {programs.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
               </select>
+              <p className="text-xs text-gray-400 mt-1">Required for Department Head accounts (their specific program).</p>
             </div>
           </div>
           <div className="flex gap-2 mt-4">

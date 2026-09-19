@@ -49,6 +49,7 @@ import ClassMonitoring from './pages/ClassMonitoring'
 import ShifteeTransferee from './pages/ShifteeTransferee'
 import VPAAAcademicPeriods from './pages/vpaa/VPAAAcademicPeriods'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminAcademicPeriods from './pages/admin/AdminAcademicPeriods'
 
 function App() {
   return (
@@ -141,6 +142,7 @@ function App() {
         <Route path="/admin" element={
           <ProtectedRoute allowedRoles={['system_admin']}><SystemAdminLayout /></ProtectedRoute>
         }></Route>
+        <Route path="academic-periods" element={<AdminAcademicPeriods />} />
       </Route>
     </Routes>
   )

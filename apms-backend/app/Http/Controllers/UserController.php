@@ -42,11 +42,19 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $data = $request->except('password');
-
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
+        // Per the Dean's instruction: System Admin sets the initial password
+        // on creation only, and may NEVER change a password afterward —
+        // neither existing accounts nor ones they just created. Each account
+        // owner changes their own password via /change-password, which
+        // verifies the current password first. Reject the request outright
+        // if a password key is present at all.
+        if ($request->has('password')) {
+            return response()->json([
+                'message' => 'Passwords cannot be changed here. Each account owner changes their own password from their Change Password page.',
+            ], 403);
         }
+
+        $data = $request->except('password');
 
         if (isset($data['school_id']) && $data['school_id'] === '') {
             $data['school_id'] = null;

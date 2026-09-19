@@ -4,6 +4,7 @@ import api from "../api/axios";
 const navItems = [
   { label: "Dashboard", icon: "📊", path: "/admin/dashboard" },
   { label: "User Management", icon: "👤", path: "/admin/users" },
+  { label: "Academic Periods", icon: "🗓️", path: "/admin/academic-periods" },
 ];
 
 export default function SystemAdminLayout() {
