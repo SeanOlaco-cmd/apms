@@ -9,6 +9,7 @@ use App\Http\Controllers\ClassMonitoringController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\FacultyPerformanceController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\RetentionController;
 use App\Http\Controllers\SchoolController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\ShifteeTransfereeController;
 use App\Http\Controllers\StudentPerformanceController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\StudentCaseController;
 
 // Public
 Route::post('/login', [AuthController::class, 'login']);
@@ -58,6 +60,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('role:department_head')->patch("/{$uri}/{{$param}}", [$controller, 'resubmit']);
         Route::middleware('role:dean')->put("/{$uri}/{{$param}}/review", [$controller, 'review']);
         Route::middleware('role:dean')->patch("/{$uri}/{{$param}}/review", [$controller, 'review']);
+        // Stage 2 — VPAA reviews what Dean already approved. Approving
+        // here is the final step that makes a record visible to the
+        // President (status becomes 'approved').
+        Route::middleware('role:vpaa')->put("/{$uri}/{{$param}}/vpaa-review", [$controller, 'vpaaReview']);
+        Route::middleware('role:vpaa')->patch("/{$uri}/{{$param}}/vpaa-review", [$controller, 'vpaaReview']);
         Route::middleware('role:dean')->delete("/{$uri}/{{$param}}", [$controller, 'destroy']);
     }
 
@@ -74,6 +81,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:vpaa')->get('/backups/{filename}/download', [BackupController::class, 'download']);
     Route::middleware('role:vpaa')->post('/backups/{filename}/restore', [BackupController::class, 'restore']);
     Route::middleware('role:vpaa')->delete('/backups/{filename}', [BackupController::class, 'destroy']);
+
+
+    // Student cases (dropout/shift/transfer detail) — Dean of the
+    // student's own school and the submitting DH ONLY. Never exposed to
+    // vpaa or president; this table holds personal data (birthdate,
+    // student no.) under the Data Privacy Act.
+    Route::middleware('role:dean,department_head')->get('/student-cases', [StudentCaseController::class, 'index']);
+    Route::middleware('role:department_head')->post('/student-cases', [StudentCaseController::class, 'store']);
+    Route::middleware('role:department_head')->put('/student-cases/{studentCase}', [StudentCaseController::class, 'update']);
+    Route::middleware('role:department_head')->patch('/student-cases/{studentCase}', [StudentCaseController::class, 'update']);
+    Route::middleware('role:department_head')->delete('/student-cases/{studentCase}', [StudentCaseController::class, 'destroy']);
 
     // Academic periods: everyone reads. System Admin maintains them —
     // per the Dean's instruction at your defense, NOT VPAA.
@@ -109,4 +127,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:system_admin')->put('/users/{user}', [UserController::class, 'update']);
     Route::middleware('role:system_admin')->patch('/users/{user}', [UserController::class, 'update']);
     Route::middleware('role:system_admin')->delete('/users/{user}', [UserController::class, 'destroy']);
+
+    // Notifications — every authenticated role can read/manage their own.
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::put('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+    Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
 });

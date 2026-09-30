@@ -59,7 +59,8 @@ class EnrollmentController extends Controller
     public function resubmit(Request $request, EnrollmentData $enrollment)
     {
         $user = $request->user();
-        abort_unless($enrollment->status === 'rejected', 403, 'Locked — cannot edit once submitted. Wait for Dean review; you can only edit after a rejection.');
+        abort_unless($enrollment->submitted_by === $user->id, 403, 'Not your submission.');
+        abort_unless($enrollment->status === 'rejected', 403, 'Only rejected submissions can be edited and resubmitted.');
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',
@@ -72,29 +73,112 @@ class EnrollmentController extends Controller
         ]);
 
         $enrollment->update($request->only([
-            'academic_period_id', 'total_enrolled', 'male_count',
-            'female_count', 'new_students', 'old_students', 'notes',
-        ]) + ['status' => 'pending', 'rejection_reason' => null]);
+            'academic_period_id',
+            'total_enrolled',
+            'male_count',
+            'female_count',
+            'new_students',
+            'old_students',
+            'notes',
+        ]) + [
+            'status' => 'pending',
+            'rejection_reason' => null,
+            'rejected_by' => null,
+            'approved_by' => null,
+            'approved_at' => null,
+            'vpaa_approved_by' => null,
+            'vpaa_approved_at' => null,
+        ]);
 
         return response()->json($enrollment);
     }
 
+    // Stage 1 — Dean reviews a pending DH submission for their own school.
     public function review(Request $request, EnrollmentData $enrollment)
     {
         $user = $request->user();
         abort_unless($enrollment->school_id === $user->school_id, 403, 'Not your school.');
+        abort_unless($enrollment->status === 'pending', 403, 'Only pending submissions can be reviewed.');
 
         $request->validate([
-            'status' => 'required|in:approved,rejected',
+            'status' => 'required|in:dean_approved,rejected',
             'rejection_reason' => 'required_if:status,rejected|nullable|string',
         ]);
 
         $enrollment->update([
             'status' => $request->status,
             'rejection_reason' => $request->status === 'rejected' ? $request->rejection_reason : null,
-            'approved_by' => $request->status === 'approved' ? $user->id : null,
-            'approved_at' => $request->status === 'approved' ? now() : null,
+            'rejected_by' => $request->status === 'rejected' ? $user->id : null,
+            'approved_by' => $request->status === 'dean_approved' ? $user->id : null,
+            'approved_at' => $request->status === 'dean_approved' ? now() : null,
         ]);
+
+        $submittedDate = $enrollment->created_at->format('M j, Y');
+
+        if ($request->status === 'dean_approved') {
+            $this->notify(
+                $enrollment->submitted_by,
+                'Enrollment submission approved',
+                "Your Enrollment submission from {$submittedDate} was approved by Dean {$user->name}.",
+                ['category' => 'enrollment', 'record_id' => $enrollment->id]
+            );
+        } else {
+            $this->notify(
+                $enrollment->submitted_by,
+                'Enrollment submission rejected',
+                "Your Enrollment submission from {$submittedDate} was rejected by Dean {$user->name}: {$request->rejection_reason}",
+                ['category' => 'enrollment', 'record_id' => $enrollment->id]
+            );
+        }
+
+        return response()->json($enrollment);
+    }
+
+    // Stage 2 — VPAA reviews a Dean-approved submission. Approving here
+    // is what finally makes it visible on the President's dashboard.
+    public function vpaaReview(Request $request, EnrollmentData $enrollment)
+    {
+        $user = $request->user();
+        abort_unless($enrollment->status === 'dean_approved', 403, 'Only Dean-approved submissions can be reviewed by VPAA.');
+
+        $request->validate([
+            'status' => 'required|in:approved,rejected',
+            'rejection_reason' => 'required_if:status,rejected|nullable|string',
+        ]);
+
+        $deanId = $enrollment->approved_by; // whoever approved it at the Dean stage
+
+        $enrollment->update([
+            'status' => $request->status,
+            'rejection_reason' => $request->status === 'rejected' ? $request->rejection_reason : null,
+            'rejected_by' => $request->status === 'rejected' ? $user->id : null,
+            'vpaa_approved_by' => $request->status === 'approved' ? $user->id : null,
+            'vpaa_approved_at' => $request->status === 'approved' ? now() : null,
+        ]);
+
+        $submittedDate = $enrollment->created_at->format('M j, Y');
+
+        if ($request->status === 'approved') {
+            $this->notify(
+                $deanId,
+                'Enrollment submission approved by VPAA',
+                "The Enrollment submission from {$submittedDate} that you approved was approved by VPAA {$user->name} and is now visible to the President.",
+                ['category' => 'enrollment', 'record_id' => $enrollment->id]
+            );
+        } else {
+            $this->notify(
+                $deanId,
+                'Enrollment submission needs revision',
+                "VPAA {$user->name} sent back the Enrollment submission from {$submittedDate} — the Department Head's data needs revision: {$request->rejection_reason}",
+                ['category' => 'enrollment', 'record_id' => $enrollment->id]
+            );
+            $this->notify(
+                $enrollment->submitted_by,
+                'Your submission needs revision',
+                "VPAA sent back your Enrollment submission from {$submittedDate} for revision: {$request->rejection_reason}",
+                ['category' => 'enrollment', 'record_id' => $enrollment->id]
+            );
+        }
 
         return response()->json($enrollment);
     }

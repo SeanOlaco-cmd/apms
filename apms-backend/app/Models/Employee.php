@@ -13,13 +13,19 @@ class Employee extends Model
         'program_id',
         'academic_period_id',
         'employee_name',
+        'employee_no',
         'position',
         'employment_type',
+        'date_hired',
+        'highest_education',
         'submitted_by',
         'status',
         'rejection_reason',
         'approved_by',
         'approved_at',
+        'rejected_by',
+        'vpaa_approved_by',
+        'vpaa_approved_at',
     ];
 
     public function school()

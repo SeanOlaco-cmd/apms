@@ -10,7 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    
+
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
@@ -59,5 +59,13 @@ class User extends Authenticatable
     public function program()
     {
         return $this->belongsTo(Program::class);
+    }
+
+    // Overrides the Notifiable trait's built-in morphMany of the same
+    // name — this app doesn't use Laravel's notification channels, just
+    // this simple table, so a plain hasMany is what we actually want.
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class)->orderByDesc('created_at');
     }
 }

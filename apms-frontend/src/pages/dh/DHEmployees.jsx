@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
 import api from "../../api/axios";
 
+const fmtDate = (d) =>
+  d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+
+const EDUCATION_OPTIONS = [
+  "Bachelor's Degree",
+  "Master's Degree (units)",
+  "Master's Degree",
+  "Doctorate (units)",
+  "Doctorate",
+];
+
 export default function DHEmployees() {
   const [periods, setPeriods] = useState([]);
   const activePeriodId = periods.find((p) => p.is_active)?.id || "";
@@ -13,8 +24,11 @@ export default function DHEmployees() {
   const emptyForm = {
     academic_period_id: activePeriodId,
     employee_name: "",
+    employee_no: "",
     position: "",
     employment_type: "",
+    date_hired: "",
+    highest_education: "",
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -42,8 +56,11 @@ export default function DHEmployees() {
     setForm({
       academic_period_id: row.academic_period_id,
       employee_name: row.employee_name,
+      employee_no: row.employee_no ?? "",
       position: row.position ?? "",
       employment_type: row.employment_type,
+      date_hired: row.date_hired ? String(row.date_hired).slice(0, 10) : "",
+      highest_education: row.highest_education ?? "",
     });
     window.scrollTo(0, 0);
   };
@@ -52,19 +69,27 @@ export default function DHEmployees() {
     setLoading(true);
     setError("");
     setSuccess("");
+    // Empty optional fields are sent as null so the backend doesn't try to
+    // validate "" as a date.
+    const payload = {
+      ...form,
+      employee_no: form.employee_no || null,
+      date_hired: form.date_hired || null,
+      highest_education: form.highest_education || null,
+    };
     try {
       if (editId) {
-        await api.put(`/employees/${editId}`, form);
+        await api.put(`/employees/${editId}`, payload);
         setSuccess("Resubmitted for Dean review!");
         setEditId(null);
       } else {
-        await api.post("/employees", form);
+        await api.post("/employees", payload);
         setSuccess("Submitted for Dean review!");
       }
       setForm(emptyForm);
       loadData();
-    } catch {
-      setError("Failed to submit. Please check all fields.");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to submit. Please check all fields.");
     } finally {
       setLoading(false);
     }
@@ -72,10 +97,11 @@ export default function DHEmployees() {
 
   const statusBadge = (status) => (
     <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
-      ${status === 'approved' ? 'bg-green-100 text-green-700' :
+      ${status === 'dean_approved' ? 'bg-blue-100 text-blue-700' :
+        status === 'approved' ? 'bg-green-100 text-green-700' :
         status === 'rejected' ? 'bg-red-100 text-red-700' :
         'bg-yellow-100 text-yellow-700'}`}>
-      {status}
+      {status === 'dean_approved' ? 'Awaiting VPAA' : status}
     </span>
   );
 
@@ -84,8 +110,8 @@ export default function DHEmployees() {
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
         <h1 className="text-2xl font-bold">Employees 🧑‍💼</h1>
         <p className="text-red-200 text-sm mt-1">
-          Submit part-time/full-time employee data for your program. You can edit while it's pending or
-          rejected — it locks once your Dean approves it.
+          Submit faculty and employee data for your program. If your Dean or the VPAA sends an entry back,
+          you can edit and resubmit it here.
         </p>
       </div>
 
@@ -110,11 +136,16 @@ export default function DHEmployees() {
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="Full name" />
           </div>
           <div>
+            <label className="text-sm font-medium text-gray-700">Employee No. (optional)</label>
+            <input type="text" name="employee_no" value={form.employee_no} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="e.g. 2019-0042" />
+          </div>
+          <div>
             <label className="text-sm font-medium text-gray-700">Position</label>
             <input type="text" name="position" value={form.position} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="e.g. Instructor" />
           </div>
-          <div className="col-span-2">
+          <div>
             <label className="text-sm font-medium text-gray-700">Employment Type</label>
             <select name="employment_type" value={form.employment_type} onChange={handleChange}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
@@ -122,6 +153,19 @@ export default function DHEmployees() {
               <option value="full_time">Full Time</option>
               <option value="part_time">Part Time</option>
             </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Highest Education (optional)</label>
+            <select name="highest_education" value={form.highest_education} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
+              <option value="">Select...</option>
+              {EDUCATION_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Date Hired (optional)</label>
+            <input type="date" name="date_hired" value={form.date_hired} onChange={handleChange}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" />
           </div>
         </div>
         <div className="flex gap-2 mt-4">
@@ -144,19 +188,27 @@ export default function DHEmployees() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Emp. No.</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Name</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Position</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Type</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Education</th>
+                <th className="text-left py-3 px-4 text-gray-500 font-medium">Submitted</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
                 <th className="text-left py-3 px-4 text-gray-500 font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
-              {submissions.map((row) => (
+              {[...submissions]
+                .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+                .map((row) => (
                 <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="py-3 px-4">{row.employee_no ?? "—"}</td>
                   <td className="py-3 px-4">{row.employee_name}</td>
                   <td className="py-3 px-4">{row.position}</td>
                   <td className="py-3 px-4 capitalize">{row.employment_type?.replace("_", " ")}</td>
+                  <td className="py-3 px-4">{row.highest_education ?? "—"}</td>
+                  <td className="py-3 px-4">{fmtDate(row.created_at)}</td>
                   <td className="py-3 px-4">
                     {statusBadge(row.status)}
                     {row.status === 'rejected' && <p className="text-red-500 text-xs mt-1">{row.rejection_reason}</p>}

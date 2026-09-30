@@ -23,6 +23,9 @@ class ShifteeTransfereeData extends Model
         'rejection_reason',
         'approved_by',
         'approved_at',
+        'rejected_by',
+        'vpaa_approved_by',
+        'vpaa_approved_at',
     ];
 
     public function school()

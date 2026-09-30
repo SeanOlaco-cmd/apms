@@ -1,63 +1,33 @@
-import { useEffect, useState } from "react";
-import api from "../../api/axios";
+import VPAAReviewPage from "../../components/VPAAReviewPage";
+
+const fmtDate = (d) =>
+  d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+
+const columns = [
+  { label: "Program", render: (r) => r.program?.code ?? "—" },
+  { label: "Emp. No.", render: (r) => r.employee_no ?? "—" },
+  { label: "Name", render: (r) => r.employee_name },
+  { label: "Position", render: (r) => r.position ?? "—" },
+  { label: "Type", render: (r) => r.employment_type?.replace("_", " "), className: "capitalize" },
+  { label: "Education", render: (r) => r.highest_education ?? "—" },
+  { label: "Date Hired", render: (r) => fmtDate(r.date_hired) },
+];
 
 export default function VPAAEmployees() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = () => {
-    setLoading(true);
-    api.get("/employees")
-      .then((res) => setData(res.data))
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  };
-
   return (
-    <div className="flex flex-col gap-6">
-      <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Employees 🧑‍💼</h1>
-        <p className="text-red-200 text-sm mt-1">Read-only view — Deans approve this data, not VPAA.</p>
-      </div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        {loading ? <p className="text-gray-400 text-sm">Loading...</p>
-        : data.length === 0 ? <p className="text-gray-400 text-sm">No data yet.</p>
-        : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">School</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Program</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Name</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Position</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Type</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row) => (
-                <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-3 px-4">{row.school?.code}</td>
-                  <td className="py-3 px-4">{row.program?.code || "—"}</td>
-                  <td className="py-3 px-4">{row.employee_name}</td>
-                  <td className="py-3 px-4">{row.position}</td>
-                  <td className="py-3 px-4 capitalize">{row.employment_type?.replace("_", " ")}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
-                      ${row.status === 'approved' ? 'bg-green-100 text-green-700' :
-                        row.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'}`}>
-                      {row.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+    <VPAAReviewPage
+      title="Faculty & Employees 🧑‍💼"
+      subtitle="Search and review employee data approved by each school's Dean."
+      uri="/employees"
+      columns={columns}
+      filter={{
+        label: "Type",
+        field: "employment_type",
+        options: [
+          { value: "full_time", label: "Full Time" },
+          { value: "part_time", label: "Part Time" },
+        ],
+      }}
+    />
   );
 }

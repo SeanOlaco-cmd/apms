@@ -1,5 +1,6 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import NotificationBell from "../components/NotificationBell";
 
 const navItems = [
   { label: "Dashboard", icon: "📊", path: "/dean/dashboard" },
@@ -11,6 +12,7 @@ const navItems = [
   { label: "Board Exam Results", icon: "📝", path: "/dean/board-exam" },
   { label: "Student Performance", icon: "🎓", path: "/dean/student-performance" },
   { label: "Employees", icon: "🧑‍💼", path: "/dean/employees" },
+  { label: "Student Cases", icon: "📄", path: "/dean/student-cases" },
 ];
 
 export default function DeanLayout() {
@@ -72,6 +74,7 @@ export default function DeanLayout() {
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
           <h2 className="text-lg font-semibold text-gray-800">Dean Portal</h2>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <div className="text-right">
               <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
               <p className="text-xs text-gray-400">Dean</p>

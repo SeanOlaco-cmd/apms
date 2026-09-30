@@ -28,6 +28,7 @@ class AcademicPeriodController extends Controller
             'school_year.regex' => 'School year must look like 2026-2027.',
         ]);
 
+        // One school year may only have one of each semester.
         $exists = AcademicPeriod::where('school_year', $validated['school_year'])
             ->where('semester', $validated['semester'])
             ->exists();
@@ -69,6 +70,24 @@ class AcademicPeriodController extends Controller
             'school_year.regex' => 'School year must look like 2026-2027.',
         ]);
 
+        // Check the RESULTING pair (existing values merged with whatever
+        // was actually submitted) against every other row — not just
+        // whatever field happened to be in this request.
+        $resultingYear = $validated['school_year'] ?? $academicPeriod->school_year;
+        $resultingSemester = $validated['semester'] ?? $academicPeriod->semester;
+
+        $duplicate = AcademicPeriod::where('school_year', $resultingYear)
+            ->where('semester', $resultingSemester)
+            ->where('id', '!=', $academicPeriod->id)
+            ->exists();
+
+        if ($duplicate) {
+            return response()->json([
+                'message' => 'That school year and semester already exists.',
+                'errors' => ['semester' => ['That school year and semester already exists.']],
+            ], 422);
+        }
+
         DB::transaction(function () use ($academicPeriod, $validated) {
             $academicPeriod->update($validated);
 
@@ -82,6 +101,8 @@ class AcademicPeriodController extends Controller
 
     public function destroy(AcademicPeriod $academicPeriod)
     {
+        // Refuse to delete a period that already has data hanging off it,
+        // otherwise the foreign keys blow up mid-demo.
         $tables = [
             'enrollment_data',
             'retention_rates',
@@ -111,6 +132,9 @@ class AcademicPeriodController extends Controller
         return response()->json(['message' => 'Deleted successfully']);
     }
 
+    /**
+     * Only one academic period may be active at a time.
+     */
     protected function deactivateOthers(int $keepId): void
     {
         AcademicPeriod::where('id', '!=', $keepId)

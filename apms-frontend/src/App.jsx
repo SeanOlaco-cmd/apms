@@ -50,6 +50,8 @@ import ShifteeTransferee from './pages/ShifteeTransferee'
 import VPAAAcademicPeriods from './pages/vpaa/VPAAAcademicPeriods'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminAcademicPeriods from './pages/admin/AdminAcademicPeriods'
+import DHStudentCases from './pages/dh/DHStudentCases'
+import DeanStudentCases from './pages/dean/DeanStudentCases'
 
 function App() {
   return (
@@ -91,6 +93,7 @@ function App() {
          <Route path="/dean" element={
           <ProtectedRoute allowedRoles={['dean']}><DeanLayout /></ProtectedRoute>
           }></Route>
+        <Route path="student-cases" element={<DeanStudentCases />} />
 
       </Route>
 
@@ -131,6 +134,7 @@ function App() {
         <Route path="/dh" element={
           <ProtectedRoute allowedRoles={['department_head']}><DHLayout /></ProtectedRoute>
         }></Route>
+        <Route path="student-cases" element={<DHStudentCases />} />
 
       </Route>
 

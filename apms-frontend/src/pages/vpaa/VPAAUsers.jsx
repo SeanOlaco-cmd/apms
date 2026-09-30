@@ -4,6 +4,7 @@ import api from "../../api/axios";
 export default function VPAAUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -12,11 +13,19 @@ export default function VPAAUsers() {
   // VPAA has read-only visibility for oversight — System Admin owns
   // create/edit/deactivate. No form or action buttons here on purpose.
   const loadData = async () => {
+    setError(null);
     try {
       const res = await api.get("/users");
       setUsers(res.data);
-    } catch {
+    } catch (err) {
+      // Surface the real failure instead of silently showing an empty
+      // table — an empty table and a failed request look identical to
+      // the user otherwise, which is exactly what hid this bug before.
       setUsers([]);
+      setError({
+        status: err?.response?.status ?? null,
+        message: err?.response?.data?.message || err.message || "Unknown error",
+      });
     } finally {
       setLoading(false);
     }
@@ -34,6 +43,14 @@ export default function VPAAUsers() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-base font-semibold text-gray-800 mb-4">All Users</h3>
         {loading ? <p className="text-gray-400 text-sm">Loading...</p>
+        : error ? (
+          <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">
+            <p className="font-semibold">Couldn't load users (status {error.status ?? "network error"}).</p>
+            <p className="mt-1">{error.message}</p>
+            {error.status === 401 && <p className="mt-1">Your session may have expired — try logging out and back in.</p>}
+            {error.status === 403 && <p className="mt-1">Your account doesn't have permission to view this — check the logged-in role.</p>}
+          </div>
+        )
         : users.length === 0 ? <p className="text-gray-400 text-sm">No users found.</p>
         : (
           <table className="w-full text-sm">

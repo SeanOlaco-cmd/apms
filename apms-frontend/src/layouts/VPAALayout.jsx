@@ -1,5 +1,6 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import NotificationBell from "../components/NotificationBell";
 
 const navItems = [
   { label: "Dashboard", icon: "📊", path: "/vpaa/dashboard" },
@@ -75,6 +76,7 @@ export default function VPAALayout() {
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
           <h2 className="text-lg font-semibold text-gray-800">VPAA Portal</h2>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <div className="text-right">
               <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
               <p className="text-xs text-gray-400">VPAA</p>
