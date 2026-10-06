@@ -27,12 +27,12 @@ class BoardExamResultController extends Controller
 
         $request->validate([
             'academic_period_id' => 'required|exists:academic_periods,id',
-            'total_examinees' => 'required|integer',
-            'total_passers' => 'required|integer',
-            'passing_rate' => 'required|numeric',
-            'first_timers' => 'required|integer',
-            'first_timer_passers' => 'required|integer',
-            'first_timer_passing_rate' => 'required|numeric',
+            'total_examinees' => 'required|integer|min:0',
+            'total_passers' => 'required|integer|min:0',
+            'passing_rate' => 'required|numeric|min:0|max:100',
+            'first_timers' => 'required|integer|min:0',
+            'first_timer_passers' => 'required|integer|min:0',
+            'first_timer_passing_rate' => 'required|numeric|min:0|max:100',
         ]);
 
         $data = BoardExamResult::create([
@@ -68,12 +68,12 @@ class BoardExamResultController extends Controller
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',
-            'total_examinees' => 'sometimes|integer',
-            'total_passers' => 'sometimes|integer',
-            'passing_rate' => 'sometimes|numeric',
-            'first_timers' => 'sometimes|integer',
-            'first_timer_passers' => 'sometimes|integer',
-            'first_timer_passing_rate' => 'sometimes|numeric',
+            'total_examinees' => 'sometimes|integer|min:0',
+            'total_passers' => 'sometimes|integer|min:0',
+            'passing_rate' => 'sometimes|numeric|min:0|max:100',
+            'first_timers' => 'sometimes|integer|min:0',
+            'first_timer_passers' => 'sometimes|integer|min:0',
+            'first_timer_passing_rate' => 'sometimes|numeric|min:0|max:100',
             'exam_name' => 'sometimes|nullable|string',
             'exam_date' => 'sometimes|nullable|date',
             'notes' => 'sometimes|nullable|string',

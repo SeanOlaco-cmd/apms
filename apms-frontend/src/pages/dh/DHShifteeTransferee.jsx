@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../api/axios";
+import StudentCasesSection from "../../components/StudentCasesSection";
 
 export default function DHShifteeTransferee() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -40,7 +41,15 @@ export default function DHShifteeTransferee() {
     setSubmissions(mine);
   };
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const blockInvalidKeys = (e) => {
+    if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const clamped = value === "" ? "" : String(Math.max(0, Number(value)));
+    setForm({ ...form, [name]: clamped });
+  };
 
   const handleEdit = (row) => {
     setEditId(row.id);
@@ -80,6 +89,16 @@ export default function DHShifteeTransferee() {
     }
   };
 
+  const statusBadge = (status) => (
+    <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
+      ${status === 'dean_approved' ? 'bg-blue-100 text-blue-700' :
+        status === 'approved' ? 'bg-green-100 text-green-700' :
+        status === 'rejected' ? 'bg-red-100 text-red-700' :
+        'bg-yellow-100 text-yellow-700'}`}>
+      {status === 'dean_approved' ? 'Awaiting VPAA' : status}
+    </span>
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
@@ -104,42 +123,49 @@ export default function DHShifteeTransferee() {
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Shiftees</label>
-            <input type="number" name="total_shiftees" value={form.total_shiftees} onChange={handleChange}
+            <input type="number" name="total_shiftees" value={form.total_shiftees} onChange={handleChange} onKeyDown={blockInvalidKeys}
+              min="0"
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Shiftees In</label>
-            <input type="number" name="shiftees_in" value={form.shiftees_in} onChange={handleChange}
+            <input type="number" name="shiftees_in" value={form.shiftees_in} onChange={handleChange} onKeyDown={blockInvalidKeys}
+              min="0"
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Shiftees Out</label>
-            <input type="number" name="shiftees_out" value={form.shiftees_out} onChange={handleChange}
+            <input type="number" name="shiftees_out" value={form.shiftees_out} onChange={handleChange} onKeyDown={blockInvalidKeys}
+              min="0"
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Transferees</label>
-            <input type="number" name="total_transferees" value={form.total_transferees} onChange={handleChange}
+            <input type="number" name="total_transferees" value={form.total_transferees} onChange={handleChange} onKeyDown={blockInvalidKeys}
+              min="0"
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Transferees In</label>
-            <input type="number" name="transferees_in" value={form.transferees_in} onChange={handleChange}
+            <input type="number" name="transferees_in" value={form.transferees_in} onChange={handleChange} onKeyDown={blockInvalidKeys}
+              min="0"
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Transferees Out</label>
-            <input type="number" name="transferees_out" value={form.transferees_out} onChange={handleChange}
+            <input type="number" name="transferees_out" value={form.transferees_out} onChange={handleChange} onKeyDown={blockInvalidKeys}
+              min="0"
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Dropouts</label>
-            <input type="number" name="total_dropouts" value={form.total_dropouts} onChange={handleChange}
+            <input type="number" name="total_dropouts" value={form.total_dropouts} onChange={handleChange} onKeyDown={blockInvalidKeys}
+              min="0"
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div className="col-span-2">
             <label className="text-sm font-medium text-gray-700">Notes (optional)</label>
-            <textarea name="notes" value={form.notes} onChange={handleChange}
+            <textarea name="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
               rows={3} placeholder="Add any notes here..." />
           </div>
@@ -180,12 +206,8 @@ export default function DHShifteeTransferee() {
                   <td className="py-3 px-4">{row.total_transferees}</td>
                   <td className="py-3 px-4 text-red-500">{row.total_dropouts}</td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
-                      ${row.status === 'approved' ? 'bg-green-100 text-green-700' :
-                        row.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'}`}>
-                      {row.status}
-                    </span>
+                    {statusBadge(row.status)}
+                    {row.status === 'rejected' && <p className="text-red-500 text-xs mt-1">{row.rejection_reason}</p>}
                   </td>
                   <td className="py-3 px-4">
                     {(row.status === 'rejected') && (
@@ -201,6 +223,8 @@ export default function DHShifteeTransferee() {
           </table>
         )}
       </div>
+
+      <StudentCasesSection caseTypes={["shift_course", "transfer_school"]} activePeriodId={activePeriodId} dhMode={true} />
     </div>
   );
 }

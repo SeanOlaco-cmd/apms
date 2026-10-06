@@ -28,13 +28,13 @@ class FacultyPerformanceController extends Controller
 
         $request->validate([
             'academic_period_id' => 'required|exists:academic_periods,id',
-            'total_faculty' => 'required|integer',
-            'full_time' => 'required|integer',
-            'part_time' => 'required|integer',
-            'average_evaluation_score' => 'required|numeric',
-            'with_masters' => 'required|integer',
-            'with_doctorate' => 'required|integer',
-            'with_board_license' => 'required|integer',
+            'total_faculty' => 'required|integer|min:0',
+            'full_time' => 'required|integer|min:0',
+            'part_time' => 'required|integer|min:0',
+            'average_evaluation_score' => 'required|numeric|min:0|max:5',
+            'with_masters' => 'required|integer|min:0',
+            'with_doctorate' => 'required|integer|min:0',
+            'with_board_license' => 'required|integer|min:0',
         ]);
 
         $data = FacultyPerformance::create([
@@ -68,13 +68,13 @@ class FacultyPerformanceController extends Controller
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',
-            'total_faculty' => 'sometimes|integer',
-            'full_time' => 'sometimes|integer',
-            'part_time' => 'sometimes|integer',
-            'average_evaluation_score' => 'sometimes|numeric',
-            'with_masters' => 'sometimes|integer',
-            'with_doctorate' => 'sometimes|integer',
-            'with_board_license' => 'sometimes|integer',
+            'total_faculty' => 'sometimes|integer|min:0',
+            'full_time' => 'sometimes|integer|min:0',
+            'part_time' => 'sometimes|integer|min:0',
+            'average_evaluation_score' => 'sometimes|numeric|min:0|max:5',
+            'with_masters' => 'sometimes|integer|min:0',
+            'with_doctorate' => 'sometimes|integer|min:0',
+            'with_board_license' => 'sometimes|integer|min:0',
             'notes' => 'sometimes|nullable|string',
         ]);
 

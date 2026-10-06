@@ -27,13 +27,13 @@ class ShifteeTransfereeController extends Controller
 
         $request->validate([
             'academic_period_id' => 'required|exists:academic_periods,id',
-            'total_shiftees' => 'required|integer',
-            'shiftees_in' => 'required|integer',
-            'shiftees_out' => 'required|integer',
-            'total_transferees' => 'required|integer',
-            'transferees_in' => 'required|integer',
-            'transferees_out' => 'required|integer',
-            'total_dropouts' => 'required|integer',
+            'total_shiftees' => 'required|integer|min:0',
+            'shiftees_in' => 'required|integer|min:0',
+            'shiftees_out' => 'required|integer|min:0',
+            'total_transferees' => 'required|integer|min:0',
+            'transferees_in' => 'required|integer|min:0',
+            'transferees_out' => 'required|integer|min:0',
+            'total_dropouts' => 'required|integer|min:0',
         ]);
 
         $data = ShifteeTransfereeData::create([
@@ -68,13 +68,13 @@ class ShifteeTransfereeController extends Controller
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',
-            'total_shiftees' => 'sometimes|integer',
-            'shiftees_in' => 'sometimes|integer',
-            'shiftees_out' => 'sometimes|integer',
-            'total_transferees' => 'sometimes|integer',
-            'transferees_in' => 'sometimes|integer',
-            'transferees_out' => 'sometimes|integer',
-            'total_dropouts' => 'sometimes|integer',
+            'total_shiftees' => 'sometimes|integer|min:0',
+            'shiftees_in' => 'sometimes|integer|min:0',
+            'shiftees_out' => 'sometimes|integer|min:0',
+            'total_transferees' => 'sometimes|integer|min:0',
+            'transferees_in' => 'sometimes|integer|min:0',
+            'transferees_out' => 'sometimes|integer|min:0',
+            'total_dropouts' => 'sometimes|integer|min:0',
             'notes' => 'sometimes|nullable|string',
         ]);
 

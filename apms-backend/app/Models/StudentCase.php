@@ -19,12 +19,16 @@ class StudentCase extends Model
         'case_type',
         'destination',
         'reason',
+        'removed_at',
+        'removed_by',
+        'retention_submission_id',
     ];
 
     protected function casts(): array
     {
         return [
             'birthdate' => 'date',
+            'removed_at' => 'datetime',
         ];
     }
 
@@ -41,5 +45,15 @@ class StudentCase extends Model
     public function academicPeriod()
     {
         return $this->belongsTo(AcademicPeriod::class);
+    }
+
+    public function removedBy()
+    {
+        return $this->belongsTo(User::class, 'removed_by');
+    }
+
+    public function retentionSubmission()
+    {
+        return $this->belongsTo(RetentionRate::class, 'retention_submission_id');
     }
 }

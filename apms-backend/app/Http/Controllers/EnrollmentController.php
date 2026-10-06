@@ -27,11 +27,11 @@ class EnrollmentController extends Controller
 
         $request->validate([
             'academic_period_id' => 'required|exists:academic_periods,id',
-            'total_enrolled' => 'required|integer',
-            'male_count' => 'required|integer',
-            'female_count' => 'required|integer',
-            'new_students' => 'required|integer',
-            'old_students' => 'required|integer',
+            'total_enrolled' => 'required|integer|min:0',
+            'male_count' => 'required|integer|min:0',
+            'female_count' => 'required|integer|min:0',
+            'new_students' => 'required|integer|min:0',
+            'old_students' => 'required|integer|min:0',
         ]);
 
         $data = EnrollmentData::create([
@@ -64,11 +64,11 @@ class EnrollmentController extends Controller
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',
-            'total_enrolled' => 'sometimes|integer',
-            'male_count' => 'sometimes|integer',
-            'female_count' => 'sometimes|integer',
-            'new_students' => 'sometimes|integer',
-            'old_students' => 'sometimes|integer',
+            'total_enrolled' => 'sometimes|integer|min:0',
+            'male_count' => 'sometimes|integer|min:0',
+            'female_count' => 'sometimes|integer|min:0',
+            'new_students' => 'sometimes|integer|min:0',
+            'old_students' => 'sometimes|integer|min:0',
             'notes' => 'sometimes|nullable|string',
         ]);
 

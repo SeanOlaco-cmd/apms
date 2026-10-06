@@ -27,14 +27,14 @@ class StudentPerformanceController extends Controller
 
         $request->validate([
             'academic_period_id' => 'required|exists:academic_periods,id',
-            'total_students' => 'required|integer',
-            'passing' => 'required|integer',
-            'failing' => 'required|integer',
-            'incomplete' => 'required|integer',
-            'dropped' => 'required|integer',
-            'passing_rate' => 'required|numeric',
-            'average_gwa' => 'required|numeric',
-            'latin_honors' => 'required|integer',
+            'total_students' => 'required|integer|min:0',
+            'passing' => 'required|integer|min:0',
+            'failing' => 'required|integer|min:0',
+            'incomplete' => 'required|integer|min:0',
+            'dropped' => 'required|integer|min:0',
+            'passing_rate' => 'required|numeric|min:0|max:100',
+            'average_gwa' => 'required|numeric|min:0',
+            'latin_honors' => 'required|integer|min:0',
         ]);
 
         $data = StudentPerformance::create([
@@ -70,14 +70,14 @@ class StudentPerformanceController extends Controller
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',
-            'total_students' => 'sometimes|integer',
-            'passing' => 'sometimes|integer',
-            'failing' => 'sometimes|integer',
-            'incomplete' => 'sometimes|integer',
-            'dropped' => 'sometimes|integer',
-            'passing_rate' => 'sometimes|numeric',
-            'average_gwa' => 'sometimes|numeric',
-            'latin_honors' => 'sometimes|integer',
+            'total_students' => 'sometimes|integer|min:0',
+            'passing' => 'sometimes|integer|min:0',
+            'failing' => 'sometimes|integer|min:0',
+            'incomplete' => 'sometimes|integer|min:0',
+            'dropped' => 'sometimes|integer|min:0',
+            'passing_rate' => 'sometimes|numeric|min:0|max:100',
+            'average_gwa' => 'sometimes|numeric|min:0',
+            'latin_honors' => 'sometimes|integer|min:0',
             'notes' => 'sometimes|nullable|string',
         ]);
 

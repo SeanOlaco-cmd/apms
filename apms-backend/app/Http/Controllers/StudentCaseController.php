@@ -7,18 +7,20 @@ use Illuminate\Http\Request;
 
 class StudentCaseController extends Controller
 {
-    // Deliberately NOT exposed to vpaa/president — see the migration
-    // comment. Only a school's own Dean and the submitting DH can see
-    // this personal-data table.
+    // Dean sees everything for their school, INCLUDING removed cases —
+    // that visibility is the whole audit-trail point. DH sees only their
+    // own active (not-removed) cases; that's their working list.
     public function index(Request $request)
     {
-        $query = StudentCase::with(['school', 'program', 'academicPeriod']);
+        $query = StudentCase::with(['school', 'program', 'academicPeriod', 'removedBy']);
         $user = $request->user();
 
         if ($user->role === 'dean') {
             $query->where('school_id', $user->school_id);
         } elseif ($user->role === 'department_head') {
-            $query->where('school_id', $user->school_id)->where('program_id', $user->program_id);
+            $query->where('school_id', $user->school_id)
+                ->where('program_id', $user->program_id)
+                ->whereNull('removed_at');
         }
 
         return $query->orderByDesc('created_at')->get();
@@ -58,42 +60,25 @@ class StudentCaseController extends Controller
         return response()->json($data, 201);
     }
 
-    public function update(Request $request, StudentCase $studentCase)
-    {
-        $user = $request->user();
-        abort_unless($studentCase->submitted_by === $user->id, 403, 'Not your submission.');
-
-        $request->validate([
-            'academic_period_id' => 'sometimes|exists:academic_periods,id',
-            'student_no' => 'sometimes|string|max:30',
-            'student_name' => 'sometimes|string',
-            'year_level' => 'sometimes|nullable|string|max:30',
-            'section' => 'sometimes|nullable|string|max:30',
-            'birthdate' => 'sometimes|nullable|date',
-            'case_type' => 'sometimes|in:dropout,shift_course,transfer_school',
-            'destination' => 'sometimes|nullable|string',
-            'reason' => 'sometimes|string',
-        ]);
-
-        $studentCase->update($request->only([
-            'academic_period_id',
-            'student_no',
-            'student_name',
-            'year_level',
-            'section',
-            'birthdate',
-            'case_type',
-            'destination',
-            'reason',
-        ]));
-
-        return response()->json($studentCase);
-    }
+    // No update() — cases are immutable once logged. A DH who makes a
+    // mistake removes it (while still unlocked) and logs a fresh one.
 
     public function destroy(Request $request, StudentCase $studentCase)
     {
-        abort_unless($studentCase->submitted_by === $request->user()->id, 403, 'Not your submission.');
-        $studentCase->delete();
-        return response()->json(['message' => 'Deleted successfully']);
+        $user = $request->user();
+        abort_unless($studentCase->submitted_by === $user->id, 403, 'Not your submission.');
+        abort_unless(
+            is_null($studentCase->retention_submission_id),
+            403,
+            'This case is locked — it has already been included in a submission and can no longer be removed.'
+        );
+
+        // Soft delete: we record who removed it and when, never hard-delete.
+        $studentCase->update([
+            'removed_at' => now(),
+            'removed_by' => $user->id,
+        ]);
+
+        return response()->json(['message' => 'Removed successfully']);
     }
 }

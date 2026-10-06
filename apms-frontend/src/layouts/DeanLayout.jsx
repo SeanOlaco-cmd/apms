@@ -12,7 +12,6 @@ const navItems = [
   { label: "Board Exam Results", icon: "📝", path: "/dean/board-exam" },
   { label: "Student Performance", icon: "🎓", path: "/dean/student-performance" },
   { label: "Employees", icon: "🧑‍💼", path: "/dean/employees" },
-  { label: "Student Cases", icon: "📄", path: "/dean/student-cases" },
 ];
 
 export default function DeanLayout() {

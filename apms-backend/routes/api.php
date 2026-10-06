@@ -89,8 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // student no.) under the Data Privacy Act.
     Route::middleware('role:dean,department_head')->get('/student-cases', [StudentCaseController::class, 'index']);
     Route::middleware('role:department_head')->post('/student-cases', [StudentCaseController::class, 'store']);
-    Route::middleware('role:department_head')->put('/student-cases/{studentCase}', [StudentCaseController::class, 'update']);
-    Route::middleware('role:department_head')->patch('/student-cases/{studentCase}', [StudentCaseController::class, 'update']);
+    // No update route — cases are immutable once logged (see StudentCaseController).
     Route::middleware('role:department_head')->delete('/student-cases/{studentCase}', [StudentCaseController::class, 'destroy']);
 
     // Academic periods: everyone reads. System Admin maintains them —

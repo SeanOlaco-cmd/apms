@@ -12,7 +12,6 @@ const navItems = [
   { label: "Board Exam Results", icon: "📝", path: "/dh/board-exam" },
   { label: "Student Performance", icon: "🎓", path: "/dh/student-performance" },
   { label: "Employees", icon: "🧑‍💼", path: "/dh/employees" },
-  { label: "Student Cases", icon: "📄", path: "/dh/student-cases" },
 ];
 
 export default function DHLayout() {
