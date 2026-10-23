@@ -1,0 +1,15 @@
+
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "apms-backend": {
+      "root": "apms-backend",
+      "framework": "vite"
+    },
+    "apms-frontend": {
+      "root": "apms-frontend",
+      "framework": "vite"
+    }
+  },
+  "rewrites": []
+}
