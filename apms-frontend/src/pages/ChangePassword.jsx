@@ -1,6 +1,9 @@
 import { useState } from "react";
 import api from "../api/axios";
 
+// Same rule the server enforces: 7-12 characters, letters/numbers/common symbols.
+const PASSWORD_PATTERN = /^[A-Za-z0-9_@$!%*#?&.\-]{7,12}$/;
+
 export default function ChangePassword() {
   const [form, setForm] = useState({
     current_password: "",
@@ -23,6 +26,12 @@ export default function ChangePassword() {
 
     if (form.new_password !== form.new_password_confirmation) {
       setError("New password and confirmation don't match.");
+      setLoading(false);
+      return;
+    }
+
+    if (!PASSWORD_PATTERN.test(form.new_password)) {
+      setError("Password must be 7-12 characters, using letters, numbers, and common symbols like _ @ $ ! % * # ? & . -");
       setLoading(false);
       return;
     }
@@ -70,10 +79,11 @@ export default function ChangePassword() {
               value={form.new_password}
               onChange={handleChange}
               required
-              minLength={8}
+              minLength={7}
+              maxLength={12}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
             />
-            <p className="text-xs text-gray-400 mt-1">At least 8 characters.</p>
+            <p className="text-xs text-gray-400 mt-1">7–12 characters. Letters, numbers, and symbols like _ @ $ ! % * # ? & . -</p>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
@@ -83,7 +93,8 @@ export default function ChangePassword() {
               value={form.new_password_confirmation}
               onChange={handleChange}
               required
-              minLength={8}
+              minLength={7}
+              maxLength={12}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
             />
           </div>

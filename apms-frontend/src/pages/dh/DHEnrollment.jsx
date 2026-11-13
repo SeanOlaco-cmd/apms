@@ -1,203 +1,199 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { RefreshCw, Send } from "lucide-react";
 import api from "../../api/axios";
+import useApi, { apiError } from "../../lib/useApi";
+import { useAcademic } from "../../context/AcademicContext";
+import { ENROLLMENT_YEARS, yearLabel } from "../../lib/academic";
+import { num } from "../../lib/format";
+import {
+  Button, Card, Empty, Field, Loading, LockedPeriod, Notice, NumberInput, PageHeader, StatusBadge, TextArea,
+} from "../../components/ui";
+
+const GRID = ENROLLMENT_YEARS.flatMap((y) => [`y${y}_new`, `y${y}_old`]);
+const blank = () => ({
+  total_enrolled: "", male_count: "", female_count: "", notes: "",
+  ...Object.fromEntries(GRID.map((k) => [k, ""])),
+});
+const n = (v) => Number(v || 0);
 
 export default function DHEnrollment() {
-  const user = JSON.parse(localStorage.getItem("user"));
-  const [periods, setPeriods] = useState([]);
-  const activePeriodId = periods.find((p) => p.is_active)?.id || "";
-  const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const { activePeriod } = useAcademic();
+  const { data: rows, loading, reload } = useApi("/enrollment");
+  const [form, setForm] = useState(blank());
   const [editId, setEditId] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const [form, setForm] = useState({
-    academic_period_id: "",
-    total_enrolled: "",
-    male_count: "",
-    female_count: "",
-    new_students: "",
-    old_students: "",
-    notes: "",
-  });
+  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+  const newTotal = ENROLLMENT_YEARS.reduce((sum, y) => sum + n(form[`y${y}_new`]), 0);
+  const oldTotal = ENROLLMENT_YEARS.reduce((sum, y) => sum + n(form[`y${y}_old`]), 0);
+  const total = n(form.total_enrolled);
+  const sexOk = n(form.male_count) + n(form.female_count) === total;
+  const ageOk = newTotal + oldTotal === total;
 
-  useEffect(() => {
-    api.get("/academic-periods").then((res) => {
-      setPeriods(res.data);
-      const active = res.data.find((p) => p.is_active);
-      if (active) {
-        setForm((f) => (f.academic_period_id ? f : { ...f, academic_period_id: active.id }));
-      }
-    });
-    loadData();
-  }, []);
+  // One report per program per period: an existing one blocks a new submission.
+  const mine = activePeriod ? rows.find((r) => r.academic_period_id === activePeriod.id) : null;
+  const locked = !!mine && !editId;
+  const canSubmit = !!activePeriod && !locked && !busy && form.total_enrolled !== "" && sexOk && ageOk;
 
-  const loadData = async () => {
-    const res = await api.get("/enrollment");
-    const mine = res.data.filter(d => d.school_id == user.school_id && d.program_id == user.program_id);
-    setSubmissions(mine);
-  };
+  const reset = () => { setForm(blank()); setEditId(null); setError(""); };
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleEdit = (row) => {
+  const startEdit = (row) => {
     setEditId(row.id);
+    setSuccess("");
+    setError("");
     setForm({
-      academic_period_id: row.academic_period_id,
-      total_enrolled: row.total_enrolled,
-      male_count: row.male_count,
-      female_count: row.female_count,
-      new_students: row.new_students,
-      old_students: row.old_students,
-      notes: row.notes ?? "",
+      total_enrolled: String(row.total_enrolled), male_count: String(row.male_count),
+      female_count: String(row.female_count), notes: row.notes ?? "",
+      ...Object.fromEntries(GRID.map((k) => [k, String(row[k] ?? 0)])),
     });
-    window.scrollTo(0, 0);
+    window.scrollTo?.(0, 0);
   };
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError("");
-    setSuccess("");
+  const submit = async () => {
+    setBusy(true); setError(""); setSuccess("");
+    const payload = {
+      academic_period_id: activePeriod.id,
+      total_enrolled: total, male_count: n(form.male_count), female_count: n(form.female_count),
+      notes: form.notes || null,
+      ...Object.fromEntries(GRID.map((k) => [k, n(form[k])])),
+    };
     try {
       if (editId) {
-        await api.put(`/enrollment/${editId}`, { ...form, status: "pending" });
-        setSuccess("Enrollment data updated successfully!");
-        setEditId(null);
+        await api.put(`/enrollment/${editId}`, payload);
+        setSuccess("Enrollment data updated and resubmitted to your Dean.");
       } else {
-        await api.post("/enrollment", {
-          ...form,
-          school_id: user.school_id,
-          program_id: user.program_id,
-        });
-        setSuccess("Enrollment data submitted successfully!");
+        await api.post("/enrollment", payload);
+        setSuccess("Enrollment data submitted to your Dean.");
       }
-      setForm({ academic_period_id: activePeriodId, total_enrolled: "", male_count: "", female_count: "", new_students: "", old_students: "", notes: "" });
-      loadData();
-    } catch {
-      setError("Failed to submit. Please check all fields.");
+      reset();
+      reload();
+    } catch (err) {
+      setError(apiError(err));
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Enrollment Data 📋</h1>
-        <p className="text-red-200 text-sm mt-1">Submit enrollment data for your program.</p>
-      </div>
+    <>
+      <PageHeader crumb="Enrollment Data" title="Enrollment Data" subtitle="Submit enrollment data for your program." />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">{editId ? "Edit Submission" : "New Submission"}</h3>
-
-        {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg mb-4">{success}</div>}
-        {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-700">Academic Period</label>
-            <div className="mt-1 w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-2 text-sm text-gray-500">
-              {(() => {
-                const p = periods.find((pd) => pd.id == form.academic_period_id);
-                return p ? `${p.school_year} - ${p.semester} Semester` : "Loading current period...";
-              })()}
-              <p className="text-xs text-gray-400 mt-1">Set automatically to the current academic period — cannot be changed here.</p>
-            </div>
+      <Card>
+        <h2 className="ap-card-title mb-4">{editId ? "Edit Submission" : "New Submission"}</h2>
+        {success && <div className="mb-4"><Notice kind="success">{success}</Notice></div>}
+        {error && <div className="mb-4"><Notice kind="error">{error}</Notice></div>}
+        {locked && (
+          <div className="mb-4">
+            <Notice kind={mine.status === "rejected" ? "error" : "info"}>
+              {mine.status === "rejected"
+                ? `Your Dean or VPAA rejected this period's report: ${mine.rejection_reason ?? "no reason given"}. Use Edit in the list below to fix and resubmit it.`
+                : "Your program already submitted enrollment data for this period, so the form is locked."}
+            </Notice>
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Total Enrolled</label>
-            <input type="number" name="total_enrolled" value={form.total_enrolled} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Male Count</label>
-            <input type="number" name="male_count" value={form.male_count} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Female Count</label>
-            <input type="number" name="female_count" value={form.female_count} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">New Students</label>
-            <input type="number" name="new_students" value={form.new_students} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Old Students</label>
-            <input type="number" name="old_students" value={form.old_students} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-          </div>
-          <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-700">Notes (optional)</label>
-            <textarea name="notes" value={form.notes} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-              rows={3} placeholder="Add any notes here..." />
-          </div>
-        </div>
-
-        <div className="flex gap-2 mt-4">
-          <button onClick={handleSubmit} disabled={loading}
-            className="bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition disabled:opacity-50">
-            {loading ? "Saving..." : editId ? "Update Submission" : "Submit"}
-          </button>
-          {editId && (
-            <button onClick={() => { setEditId(null); setForm({ academic_period_id: activePeriodId, total_enrolled: "", male_count: "", female_count: "", new_students: "", old_students: "", notes: "" }); }}
-              className="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">
-              Cancel
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">My Submissions</h3>
-        {submissions.length === 0 ? (
-          <p className="text-gray-400 text-sm">No submissions yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Period</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Total Enrolled</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Male</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Female</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {submissions.map((row) => (
-                <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-3 px-4">{row.academic_period?.school_year} - {row.academic_period?.semester}</td>
-                  <td className="py-3 px-4">{row.total_enrolled}</td>
-                  <td className="py-3 px-4">{row.male_count}</td>
-                  <td className="py-3 px-4">{row.female_count}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
-                      ${row.status === 'approved' ? 'bg-green-100 text-green-700' :
-                        row.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'}`}>
-                      {row.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    {row.status === 'rejected' ? (
-                      <button onClick={() => handleEdit(row)}
-                        className="bg-blue-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-600 transition">
-                        Edit
-                      </button>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         )}
-      </div>
-    </div>
+
+        <fieldset disabled={locked || busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+          <div className="ap-form-grid">
+            <LockedPeriod period={activePeriod} />
+
+            <Field label="Total Enrolled">
+              <NumberInput value={form.total_enrolled} onChange={set("total_enrolled")} />
+            </Field>
+            <Field label="Male Count">
+              <NumberInput value={form.male_count} onChange={set("male_count")} />
+            </Field>
+            <Field label="Female Count" hint={!sexOk && form.total_enrolled !== "" ? `Male + female is ${n(form.male_count) + n(form.female_count)}, but the total is ${total}.` : null}>
+              <NumberInput value={form.female_count} onChange={set("female_count")} />
+            </Field>
+            <Field label="New Students" hint="Calculated from the year-level table below.">
+              <input className="ap-input" readOnly value={newTotal} aria-label="New students (calculated)" />
+            </Field>
+            <Field label="Old Students" className="span-2"
+              hint={!ageOk && form.total_enrolled !== "" ? `New + old is ${newTotal + oldTotal}, but the total is ${total}.` : "Calculated from the year-level table below."}>
+              <input className="ap-input" readOnly value={oldTotal} aria-label="Old students (calculated)" />
+            </Field>
+
+            <div className="span-2">
+              <p className="ap-label">New and old students per year level</p>
+              <div className="ap-table-wrap">
+                <table className="ap-table">
+                  <thead>
+                    <tr>
+                      <th className="py-3 px-4">Year level</th>
+                      <th className="py-3 px-4">New students</th>
+                      <th className="py-3 px-4">Old students</th>
+                      <th className="py-3 px-4">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ENROLLMENT_YEARS.map((y) => (
+                      <tr key={y}>
+                        <td className="py-2 px-4 strong">{yearLabel(y)}</td>
+                        <td className="py-2 px-4"><NumberInput value={form[`y${y}_new`]} onChange={set(`y${y}_new`)} aria-label={`${yearLabel(y)} new students`} /></td>
+                        <td className="py-2 px-4"><NumberInput value={form[`y${y}_old`]} onChange={set(`y${y}_old`)} aria-label={`${yearLabel(y)} old students`} /></td>
+                        <td className="py-2 px-4 strong">{n(form[`y${y}_new`]) + n(form[`y${y}_old`])}</td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td className="py-3 px-4 strong">All years</td>
+                      <td className="py-3 px-4 strong">{newTotal}</td>
+                      <td className="py-3 px-4 strong">{oldTotal}</td>
+                      <td className="py-3 px-4 strong">{newTotal + oldTotal}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <Field label="Notes (optional)" className="span-2">
+              <TextArea value={form.notes} onChange={(e) => set("notes")(e.target.value)} placeholder="Add any notes here…" />
+            </Field>
+          </div>
+
+          <div className="ap-form-actions">
+            <Button icon={Send} onClick={submit} disabled={!canSubmit}>
+              {busy ? "Saving…" : editId ? "Update & Resubmit" : "Submit Enrollment Data"}
+            </Button>
+            <Button variant="ghost" icon={RefreshCw} onClick={reset}>Reset Form</Button>
+          </div>
+        </fieldset>
+      </Card>
+
+      <Card>
+        <h2 className="ap-card-title mb-4">Your enrollment reports</h2>
+        {loading ? <Loading /> : rows.length === 0 ? <Empty>No enrollment reports yet.</Empty> : (
+          <div className="ap-table-wrap">
+            <table className="ap-table">
+              <thead>
+                <tr>
+                  {["Period", "Total", "Male / Female", "New / Old", "Status", "Action"].map((h) => (
+                    <th key={h} className="py-3 px-4">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...rows].sort((a, b) => b.id - a.id).map((r) => (
+                  <tr key={r.id}>
+                    <td className="py-3 px-4 strong">{r.academic_period?.school_year?.replace("-", "–")} · {r.academic_period?.semester}</td>
+                    <td className="py-3 px-4">{num(r.total_enrolled)}</td>
+                    <td className="py-3 px-4">{num(r.male_count)} / {num(r.female_count)}</td>
+                    <td className="py-3 px-4">{num(r.new_students)} / {num(r.old_students)}</td>
+                    <td className="py-3 px-4">
+                      <StatusBadge status={r.status} viewer="dh" />
+                      {r.status === "rejected" && <p className="ap-hint" style={{ color: "#9b1c40" }}>{r.rejection_reason}</p>}
+                    </td>
+                    <td className="py-3 px-4">
+                      {r.status === "rejected" && <Button small variant="ghost" onClick={() => startEdit(r)}>Edit</Button>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </>
   );
 }

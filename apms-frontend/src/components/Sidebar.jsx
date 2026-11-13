@@ -1,30 +1,20 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import api from "../api/axios";
 
 const navItems = [
-  { label: "Overview", icon: "📊", path: "/dashboard" },
-  { label: "Enrollment", icon: "📋", path: "/dashboard/enrollment" },
-  { label: "Retention", icon: "📈", path: "/dashboard/retention" },
-  { label: "Shiftee & Transferee", icon: "🔄", path: "/dashboard/shiftee-transferee" },
-  { label: "Faculty Performance", icon: "👨‍🏫", path: "/dashboard/faculty-performance" },
-  { label: "Achievements", icon: "🏆", path: "/dashboard/achievements" },
-  { label: "Board Exam Results", icon: "📝", path: "/dashboard/board-exam" },
-  { label: "Class Monitoring", icon: "📓", path: "/dashboard/class-monitoring" },
-  { label: "Student Performance", icon: "🎓", path: "/dashboard/student-performance" },
-  { label: "Change Password", icon: "🔒", path: "/dashboard/change-password" },
+  { label: "Overview", path: "/dashboard" },
+  { label: "Enrollment", path: "/dashboard/enrollment" },
+  { label: "Retention", path: "/dashboard/retention" },
+  { label: "Shiftee & Transferee", path: "/dashboard/shiftee-transferee" },
+  { label: "Faculty Performance", path: "/dashboard/faculty-performance" },
+  { label: "Achievements", path: "/dashboard/achievements" },
+  { label: "Board Exam Results", path: "/dashboard/board-exam" },
+  { label: "Class Monitoring", path: "/dashboard/class-monitoring" },
+  { label: "Student Performance", path: "/dashboard/student-performance" },
 ];
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  const handleLogout = async () => {
-    await api.post("/logout");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   return (
     <div className="w-64 min-h-screen bg-[#7b1113] flex flex-col">
@@ -52,21 +42,10 @@ export default function Sidebar() {
                 : "text-red-100 hover:bg-[#5e0d0f]"
               }`}
           >
-            <span>{item.icon}</span>
             {item.label}
           </button>
         ))}
       </nav>
-
-      {/* Logout */}
-      <div className="p-3 border-t border-[#5e0d0f]">
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-100 hover:bg-[#5e0d0f] w-full text-left transition"
-        >
-          <span>🚪</span> Logout
-        </button>
-      </div>
     </div>
   );
 }

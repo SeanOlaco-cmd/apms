@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const tiles = [
+  { label: "Enrollment", hint: "Enrollment statistics", path: "/dh/enrollment" },
+  { label: "Retention", hint: "Dropout and transfer cases, retention rate", path: "/dh/retention" },
+  { label: "Shiftee & Transferee", hint: "Shift and transfer cases and counts", path: "/dh/shiftee-transferee" },
+  { label: "Faculty Performance", hint: "Faculty evaluation data", path: "/dh/faculty-performance" },
+  { label: "Achievements", hint: "Faculty achievements", path: "/dh/achievements" },
+  { label: "Board Exam Results", hint: "Board exam results", path: "/dh/board-exam" },
+  { label: "Student Performance", hint: "Student performance data", path: "/dh/student-performance" },
+  { label: "Employees", hint: "Faculty and employee records", path: "/dh/employees" },
+];
+
 export default function DHDashboard() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
@@ -28,43 +39,14 @@ export default function DHDashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div onClick={() => navigate("/dh/enrollment")}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
-          <div className="text-3xl mb-3">📋</div>
-          <h3 className="font-semibold text-gray-800">Enrollment Data</h3>
-          <p className="text-gray-400 text-sm mt-1">Input enrollment statistics</p>
-        </div>
-        <div onClick={() => navigate("/dh/recruitment")}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
-          <div className="text-3xl mb-3">🎯</div>
-          <h3 className="font-semibold text-gray-800">Recruitment Data</h3>
-          <p className="text-gray-400 text-sm mt-1">Input recruitment statistics</p>
-        </div>
-        <div onClick={() => navigate("/dh/retention")}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
-          <div className="text-3xl mb-3">📈</div>
-          <h3 className="font-semibold text-gray-800">Retention Rates</h3>
-          <p className="text-gray-400 text-sm mt-1">Input retention statistics</p>
-        </div>
-        <div onClick={() => navigate("/dh/faculty-performance")}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
-          <div className="text-3xl mb-3">👨‍🏫</div>
-          <h3 className="font-semibold text-gray-800">Faculty Performance</h3>
-          <p className="text-gray-400 text-sm mt-1">Input faculty evaluation data</p>
-        </div>
-        <div onClick={() => navigate("/dh/achievements")}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
-          <div className="text-3xl mb-3">🏆</div>
-          <h3 className="font-semibold text-gray-800">Achievements</h3>
-          <p className="text-gray-400 text-sm mt-1">Input faculty achievements</p>
-        </div>
-        <div onClick={() => navigate("/dh/student-performance")}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition">
-          <div className="text-3xl mb-3">🎓</div>
-          <h3 className="font-semibold text-gray-800">Student Performance</h3>
-          <p className="text-gray-400 text-sm mt-1">Input student performance data</p>
-        </div>
+      <div className="grid grid-cols-4 gap-4">
+        {tiles.map((t) => (
+          <div key={t.path} onClick={() => navigate(t.path)}
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition">
+            <h3 className="font-semibold text-gray-800">{t.label}</h3>
+            <p className="text-gray-400 text-sm mt-1">{t.hint}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

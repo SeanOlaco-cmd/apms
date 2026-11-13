@@ -1,211 +1,206 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
+import { Ban, ClipboardList, Clock, RefreshCw, Save, UserX } from "lucide-react";
 import api from "../../api/axios";
+import useApi, { apiError } from "../../lib/useApi";
+import { useAcademic } from "../../context/AcademicContext";
+import { SECTIONS, VERDICTS, labelOf, programChip } from "../../lib/academic";
+import { formatDate, num } from "../../lib/format";
+import {
+  Button, Card, Empty, Field, Loading, LockedPeriod, Notice, NumberInput, PageHeader, Pills, SearchBox,
+  SelectInput, TextArea, TextInput, Tile, TileGrid,
+} from "../../components/ui";
 
+// Local date as YYYY-MM-DD (not UTC, so mornings in Manila don't show yesterday).
+const localToday = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const blank = () => ({
+  monitored_on: localToday(), school_id: "", program_id: "", instructor_name: "", subject_code: "",
+  section: "", verdict: "", minutes_early: "", remarks: "",
+});
+
+const badgeOf = (v) => VERDICTS.find((x) => x.value === v)?.badge ?? "b-neutral";
+
+// VPAA: log whether an instructor held, cancelled or cut short a class.
 export default function VPAAClassMonitoring() {
-  const user = JSON.parse(localStorage.getItem("user"));
-  const [periods, setPeriods] = useState([]);
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [success, setSuccess] = useState("");
+  const { schools, schoolPrograms, activePeriod, inYear } = useAcademic();
+  const { data, loading, reload } = useApi("/class-monitoring-logs");
+  const [form, setForm] = useState(blank());
+  const [editId, setEditId] = useState(null);
+  const [query, setQuery] = useState("");
+  const [verdictFilter, setVerdictFilter] = useState("all");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [success, setSuccess] = useState("");
 
-  const [form, setForm] = useState({
-    academic_period_id: "",
-    school_id: "",
-    program_id: "",
-    subject_name: "",
-    subject_code: "",
-    instructor_name: "",
-    total_students: "",
-    passing: "",
-    failing: "",
-    incomplete: "",
-    dropped: "",
-    passing_rate: "",
-    notes: "",
-  });
+  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+  const setSchool = (value) => setForm((f) => ({ ...f, school_id: value, program_id: "" }));
+  const programs = form.school_id ? schoolPrograms(Number(form.school_id)) : [];
+  const early = form.verdict === "early_dismissal";
 
-  const [schools, setSchools] = useState([]);
-  const [programs, setPrograms] = useState([]);
+  const canSave = !busy && form.school_id && form.program_id && form.instructor_name.trim() && form.subject_code.trim()
+    && form.section && form.verdict && form.monitored_on && (!early || Number(form.minutes_early) > 0);
 
-  useEffect(() => {
-    api.get("/academic-periods").then((res) => setPeriods(res.data));
-    api.get("/class-monitoring").then((res) => setData(res.data)).finally(() => setLoading(false));
-    api.get("/schools").then((res) => setSchools(res.data));
-  }, []);
+  const reset = () => { setForm(blank()); setEditId(null); setError(""); };
 
-  const handleSchoolChange = async (e) => {
-    const schoolId = e.target.value;
-    setForm({ ...form, school_id: schoolId, program_id: "" });
-    if (schoolId) {
-      const res = await api.get(`/programs?school_id=${schoolId}`);
-      setPrograms(res.data);
-    }
-  };
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async () => {
-    setError("");
-    setSuccess("");
+  const save = async () => {
+    setBusy(true); setError(""); setSuccess("");
+    const payload = {
+      monitored_on: form.monitored_on, school_id: Number(form.school_id), program_id: Number(form.program_id),
+      instructor_name: form.instructor_name.trim(), subject_code: form.subject_code.trim().toUpperCase(),
+      section: form.section, verdict: form.verdict, remarks: form.remarks.trim() || null,
+      minutes_early: early ? Number(form.minutes_early) : null,
+    };
     try {
-      await api.post("/class-monitoring", { ...form });
-      setSuccess("Class monitoring record submitted successfully!");
-      setShowForm(false);
-      const res = await api.get("/class-monitoring");
-      setData(res.data);
-      setForm({
-        academic_period_id: "", school_id: "", program_id: "",
-        subject_name: "", subject_code: "", instructor_name: "",
-        total_students: "", passing: "", failing: "",
-        incomplete: "", dropped: "", passing_rate: "", notes: "",
-      });
-    } catch {
-      setError("Failed to submit. Please check all fields.");
+      if (editId) {
+        await api.put(`/class-monitoring-logs/${editId}`, payload);
+        setSuccess("Class monitoring entry updated.");
+      } else {
+        await api.post("/class-monitoring-logs", { ...payload, academic_period_id: activePeriod?.id });
+        setSuccess("Class monitoring entry saved.");
+      }
+      reset();
+      reload();
+    } catch (err) {
+      setError(apiError(err));
+    } finally {
+      setBusy(false);
     }
   };
+
+  const edit = (r) => {
+    setEditId(r.id); setSuccess(""); setError("");
+    setForm({
+      monitored_on: (r.monitored_on ?? "").slice(0, 10), school_id: String(r.school_id), program_id: String(r.program_id),
+      instructor_name: r.instructor_name, subject_code: r.subject_code, section: r.section, verdict: r.verdict,
+      minutes_early: r.minutes_early ? String(r.minutes_early) : "", remarks: r.remarks ?? "",
+    });
+    window.scrollTo?.(0, 0);
+  };
+
+  const remove = async (r) => {
+    if (!window.confirm(`Delete the entry for ${r.instructor_name} (${r.subject_code})?`)) return;
+    try {
+      await api.delete(`/class-monitoring-logs/${r.id}`);
+      reload();
+    } catch (err) {
+      setError(apiError(err));
+    }
+  };
+
+  const inScope = useMemo(() => data.filter(inYear), [data, inYear]);
+  const count = (v) => inScope.filter((r) => r.verdict === v).length;
+  const lostMinutes = inScope.filter((r) => r.verdict === "early_dismissal").reduce((s, r) => s + Number(r.minutes_early || 0), 0);
+
+  const needle = query.trim().toLowerCase();
+  const rows = inScope
+    .filter((r) => verdictFilter === "all" || r.verdict === verdictFilter)
+    .filter((r) => !needle || r.instructor_name.toLowerCase().includes(needle) || r.subject_code.toLowerCase().includes(needle));
+
+  const verdictPills = [{ value: "all", label: "All" }, ...VERDICTS.map((v) => ({ value: v.value, label: v.label }))];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Class Monitoring 📓</h1>
-        <p className="text-red-200 text-sm mt-1">Input and view class monitoring records.</p>
-      </div>
+    <>
+      <PageHeader crumb="Class Monitoring" title="Class Monitoring"
+        subtitle="Record whether instructors held their classes for the full scheduled time." />
 
-      {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg">{success}</div>}
+      <Card>
+        <h2 className="ap-card-title mb-4">{editId ? "Edit Monitoring Entry" : "New Monitoring Entry"}</h2>
+        {success && <div className="mb-4"><Notice kind="success">{success}</Notice></div>}
+        {error && <div className="mb-4"><Notice kind="error">{error}</Notice></div>}
 
-      <div className="flex justify-end">
-        <button onClick={() => setShowForm(!showForm)}
-          className="bg-[#7b1113] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#5e0d0f] transition">
-          {showForm ? "Cancel" : "+ Add New Record"}
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-base font-semibold text-gray-800 mb-4">New Class Monitoring Record</h3>
-          {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Academic Period</label>
-              <select name="academic_period_id" value={form.academic_period_id} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-                <option value="">Select period...</option>
-                {periods.map(p => <option key={p.id} value={p.id}>{p.school_year} - {p.semester} Semester</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">School</label>
-              <select name="school_id" value={form.school_id} onChange={handleSchoolChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-                <option value="">Select school...</option>
-                {schools.map(s => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Program</label>
-              <select name="program_id" value={form.program_id} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-                <option value="">Select program...</option>
-                {programs.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Subject Name</label>
-              <input type="text" name="subject_name" value={form.subject_name} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-                placeholder="e.g. Calculus..." />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Subject Code</label>
-              <input type="text" name="subject_code" value={form.subject_code} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-                placeholder="e.g. MATH101..." />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Instructor Name</label>
-              <input type="text" name="instructor_name" value={form.instructor_name} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-                placeholder="Full name..." />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Total Students</label>
-              <input type="number" name="total_students" value={form.total_students} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Passing</label>
-              <input type="number" name="passing" value={form.passing} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Failing</label>
-              <input type="number" name="failing" value={form.failing} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Incomplete</label>
-              <input type="number" name="incomplete" value={form.incomplete} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Dropped</label>
-              <input type="number" name="dropped" value={form.dropped} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Passing Rate (%)</label>
-              <input type="number" name="passing_rate" value={form.passing_rate} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0.00" step="0.01" />
-            </div>
-            <div className="col-span-2">
-              <label className="text-sm font-medium text-gray-700">Notes (optional)</label>
-              <textarea name="notes" value={form.notes} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-                rows={3} placeholder="Add any notes here..." />
-            </div>
-          </div>
-          <button onClick={handleSubmit}
-            className="mt-4 bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition">
-            Submit
-          </button>
+        <div className="ap-form-grid">
+          <LockedPeriod period={activePeriod} />
+          <Field label="Date monitored">
+            <input type="date" className="ap-input" max={localToday()} value={form.monitored_on}
+              onChange={(e) => set("monitored_on")(e.target.value)} />
+          </Field>
+          <Field label="School">
+            <SelectInput value={form.school_id} onChange={setSchool} placeholder="Select school…"
+              options={schools.map((s) => ({ value: String(s.id), label: s.code }))} />
+          </Field>
+          <Field label="Program">
+            <SelectInput value={form.program_id} onChange={set("program_id")} disabled={!form.school_id}
+              placeholder={form.school_id ? "Select program…" : "Select a school first"}
+              options={programs.map((p) => ({ value: String(p.id), label: programChip(p) }))} />
+          </Field>
+          <Field label="Instructor name" className="span-2">
+            <TextInput value={form.instructor_name} onChange={(e) => set("instructor_name")(e.target.value)} placeholder="Enter instructor name…" />
+          </Field>
+          <Field label="Subject code">
+            <TextInput value={form.subject_code} onChange={(e) => set("subject_code")(e.target.value)} placeholder="e.g. IT 101" />
+          </Field>
+          <Field label="Section">
+            <SelectInput value={form.section} onChange={set("section")} options={SECTIONS} placeholder="Select section…" />
+          </Field>
+          <Field label="Verdict" className={early ? "" : "span-2"}>
+            <SelectInput value={form.verdict} onChange={set("verdict")} options={VERDICTS} placeholder="Select verdict…" />
+          </Field>
+          {early && (
+            <Field label="Minutes dismissed early" hint="Early dismissal is penalizable — every minute of the allotted time must be used.">
+              <NumberInput value={form.minutes_early} onChange={set("minutes_early")} />
+            </Field>
+          )}
+          <Field label="Remarks (optional)" className="span-2">
+            <TextArea value={form.remarks} onChange={(e) => set("remarks")(e.target.value)} placeholder="Add any additional details…" />
+          </Field>
         </div>
-      )}
+        <div className="ap-form-actions">
+          <Button icon={Save} onClick={save} disabled={!canSave}>{busy ? "Saving…" : editId ? "Update Entry" : "Save Entry"}</Button>
+          <Button variant="ghost" icon={RefreshCw} onClick={reset}>Reset Form</Button>
+        </div>
+      </Card>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">Class Monitoring Records</h3>
-        {loading ? <p className="text-gray-400 text-sm">Loading...</p>
-        : data.length === 0 ? <p className="text-gray-400 text-sm">No records yet.</p>
-        : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">School</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Program</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Subject</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Instructor</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Total</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Passing Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row) => (
-                <tr key={row.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-3 px-4">{row.school?.code}</td>
-                  <td className="py-3 px-4">{row.program?.code}</td>
-                  <td className="py-3 px-4">{row.subject_name}</td>
-                  <td className="py-3 px-4">{row.instructor_name}</td>
-                  <td className="py-3 px-4">{row.total_students}</td>
-                  <td className="py-3 px-4 font-semibold">{row.passing_rate}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <Card>
+        <TileGrid min="10rem">
+          <Tile icon={ClipboardList} tone="blue" label="Entries" value={num(inScope.length)} note="this academic year" />
+          <Tile icon={Ban} tone="red" label="Cancelled" value={num(count("cancelled_by_instructor"))} note="by the instructor" />
+          <Tile icon={Clock} tone="orange" label="Early dismissals" value={num(count("early_dismissal"))} note={`${num(lostMinutes)} min lost`} />
+          <Tile icon={UserX} tone="lavender" label="Unavailable" value={num(count("instructor_unavailable"))} note="instructor absent" />
+        </TileGrid>
+      </Card>
+
+      <div className="ap-toolbar">
+        <SearchBox value={query} onChange={setQuery} placeholder="Search instructor or subject…" />
+        <Pills label="Verdict" options={verdictPills} value={verdictFilter} onChange={setVerdictFilter} />
       </div>
-    </div>
+
+      <Card>
+        {loading ? <Loading /> : rows.length === 0 ? <Empty>No monitoring entries match these filters.</Empty> : (
+          <div className="ap-table-wrap">
+            <table className="ap-table">
+              <thead>
+                <tr>{["Date", "Instructor", "School", "Program", "Subject", "Section", "Verdict", "Remarks", ""].map((h, i) => <th key={i} className="py-3 px-4">{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id}>
+                    <td className="py-3 px-4">{formatDate(r.monitored_on)}</td>
+                    <td className="py-3 px-4 strong">{r.instructor_name}</td>
+                    <td className="py-3 px-4">{r.school?.code ?? "—"}</td>
+                    <td className="py-3 px-4">{r.program ? programChip(r.program) : "—"}</td>
+                    <td className="py-3 px-4">{r.subject_code}</td>
+                    <td className="py-3 px-4">{r.section}</td>
+                    <td className="py-3 px-4">
+                      <span className={`ap-badge ${badgeOf(r.verdict)}`}>{labelOf(VERDICTS, r.verdict)}</span>
+                      {r.verdict === "early_dismissal" && r.minutes_early ? <p className="ap-hint">{r.minutes_early} min early</p> : null}
+                    </td>
+                    <td className="py-3 px-4">{r.remarks || "—"}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex gap-2">
+                        <Button small variant="ghost" onClick={() => edit(r)}>Edit</Button>
+                        <Button small variant="reject" onClick={() => remove(r)}>Delete</Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </>
   );
 }

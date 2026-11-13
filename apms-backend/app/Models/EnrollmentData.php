@@ -24,6 +24,14 @@ class EnrollmentData extends Model
         'rejected_by',
         'vpaa_approved_by',
         'vpaa_approved_at',
+        'y1_new',
+        'y1_old',
+        'y2_new',
+        'y2_old',
+        'y3_new',
+        'y3_old',
+        'y4_new',
+        'y4_old',
     ];
 
     public function school()

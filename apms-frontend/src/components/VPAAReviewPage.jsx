@@ -213,6 +213,7 @@ export default function VPAAReviewPage({ title, subtitle, uri, columns, filter =
             <p className="text-xs text-gray-400 mb-3">
               This sends the record back to the Department Head for revision and notifies the Dean.
             </p>
+            {error && <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg mb-3">{error}</div>}
             <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
               rows={4} placeholder="Enter reason for rejection..." />
@@ -221,7 +222,7 @@ export default function VPAAReviewPage({ title, subtitle, uri, columns, filter =
                 className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 Confirm Reject
               </button>
-              <button onClick={() => { setRejectId(null); setRejectReason(""); }}
+              <button onClick={() => { setRejectId(null); setRejectReason(""); setError(""); }}
                 className="bg-gray-200 text-gray-700 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
                 Cancel
               </button>

@@ -82,8 +82,9 @@ export default function DHShifteeTransferee() {
       }
       setForm({ academic_period_id: activePeriodId, total_shiftees: "", shiftees_in: "", shiftees_out: "", total_transferees: "", transferees_in: "", transferees_out: "", total_dropouts: "", notes: "" });
       loadData();
-    } catch {
-      setError("Failed to submit. Please check all fields.");
+    } catch (err) {
+      const firstFieldError = err.response?.data?.errors && Object.values(err.response.data.errors)[0]?.[0];
+      setError(firstFieldError || err.response?.data?.message || "Failed to submit. Please check all fields.");
     } finally {
       setLoading(false);
     }

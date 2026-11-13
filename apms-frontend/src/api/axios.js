@@ -17,4 +17,23 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// If the server says our token is no longer valid (expired, or revoked by
+// "log out of all devices"), clear the session and go to login instead of
+// leaving the user on a page where nothing loads. A wrong password at the
+// login form is also a 401, so that request is excluded.
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const url = error.config?.url || '';
+        if (error.response?.status === 401 && !url.includes('/login')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;

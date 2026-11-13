@@ -18,13 +18,23 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
+            // 2-7 chars, letters/numbers/underscore only — kept short on
+            // purpose so it's quick to type at login.
+            'username' => 'nullable|string|regex:/^[A-Za-z0-9_]{2,7}$/|unique:users,username',
+            'password' => [
+                'required',
+                'regex:/^[A-Za-z0-9_@$!%*#?&.\-]{7,12}$/',
+            ],
             'role' => 'required',
+        ], [
+            'username.regex' => 'Username must be 2-7 characters: letters, numbers, and underscores only.',
+            'password.regex' => 'Password must be 7-12 characters, using letters, numbers, and common symbols like _ @ $ ! % * # ? & . -',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'username' => $request->username ?: null,
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'school_id' => $request->school_id ?: null,
@@ -52,6 +62,14 @@ class UserController extends Controller
             return response()->json([
                 'message' => 'Passwords cannot be changed here. Each account owner changes their own password from their Change Password page.',
             ], 403);
+        }
+
+        if ($request->has('username') && $request->username) {
+            $request->validate([
+                'username' => 'string|regex:/^[A-Za-z0-9_]{2,7}$/|unique:users,username,' . $user->id,
+            ], [
+                'username.regex' => 'Username must be 2-7 characters: letters, numbers, and underscores only.',
+            ]);
         }
 
         $data = $request->except('password');

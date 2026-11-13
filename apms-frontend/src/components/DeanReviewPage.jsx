@@ -216,6 +216,7 @@ export default function DeanReviewPage({ title, subtitle, uri, columns, byProgra
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h3 className="text-base font-semibold text-gray-800 mb-4">Reason for Rejection</h3>
+            {error && <div className="bg-red-50 text-red-700 text-sm px-3 py-2 rounded-lg mb-3">{error}</div>}
             <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
               rows={4} placeholder="Enter reason for rejection..." />
@@ -224,7 +225,7 @@ export default function DeanReviewPage({ title, subtitle, uri, columns, byProgra
                 className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 Confirm Reject
               </button>
-              <button onClick={() => { setRejectId(null); setRejectReason(""); }}
+              <button onClick={() => { setRejectId(null); setRejectReason(""); setError(""); }}
                 className="bg-gray-200 text-gray-700 text-sm px-4 py-2 rounded-lg hover:bg-gray-300 transition">
                 Cancel
               </button>

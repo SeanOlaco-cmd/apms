@@ -1,1 +1,103 @@
 @import "tailwindcss";
+
+/* ---------- Animations ---------- */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.animate-fade-up { animation: fadeUp 0.45s ease both; }
+.animate-fade-in { animation: fadeIn 0.2s ease both; }
+.animate-pop-in  { animation: popIn 0.16s ease both; transform-origin: top right; }
+
+/* Every page fades up as you navigate, with its sections staggered. */
+main > div > * { animation: fadeUp 0.45s ease both; }
+main > div > *:nth-child(2) { animation-delay: 0.06s; }
+main > div > *:nth-child(3) { animation-delay: 0.12s; }
+main > div > *:nth-child(4) { animation-delay: 0.18s; }
+main > div > *:nth-child(5) { animation-delay: 0.24s; }
+main > div > *:nth-child(n+6) { animation-delay: 0.3s; }
+
+button { transition: transform 0.12s ease, background-color 0.15s ease, opacity 0.15s ease; }
+button:active:not(:disabled) { transform: scale(0.98); }
+
+/* Logout fades the whole screen out before leaving. */
+#root { transition: opacity 0.25s ease; }
+#root.page-leaving { opacity: 0; }
+
+/* Settings > Animations off, or the device asks for reduced motion. */
+[data-animations="off"] *,
+[data-animations="off"] *::before,
+[data-animations="off"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Table density ---------- */
+[data-density="compact"] td.py-3,
+[data-density="compact"] th.py-3 { padding-top: 0.35rem; padding-bottom: 0.35rem; }
+[data-density="compact"] td.px-4,
+[data-density="compact"] th.px-4 { padding-left: 0.65rem; padding-right: 0.65rem; }
+
+/* ---------- Dark mode ----------
+   One override layer instead of editing every page. The maroon brand
+   colour (bg-[#7b1113]) is an arbitrary value, so it's left untouched. */
+[data-theme="dark"] body { background-color: #0f172a; color: #e2e8f0; }
+
+[data-theme="dark"] .bg-white { background-color: #1e293b; }
+[data-theme="dark"] .bg-gray-50 { background-color: #172033; }
+[data-theme="dark"] .bg-gray-100 { background-color: #0f172a; }
+[data-theme="dark"] .bg-gray-200 { background-color: #334155; }
+[data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #273449; }
+[data-theme="dark"] .hover\:bg-gray-100:hover { background-color: #273449; }
+[data-theme="dark"] .hover\:bg-gray-200:hover,
+[data-theme="dark"] .hover\:bg-gray-300:hover { background-color: #3f4f66; }
+
+[data-theme="dark"] .text-gray-900,
+[data-theme="dark"] .text-gray-800,
+[data-theme="dark"] .text-gray-700 { color: #f1f5f9; }
+[data-theme="dark"] .text-gray-600 { color: #cbd5e1; }
+[data-theme="dark"] .text-gray-500,
+[data-theme="dark"] .text-gray-400 { color: #94a3b8; }
+
+[data-theme="dark"] .border-gray-50,
+[data-theme="dark"] .border-gray-100,
+[data-theme="dark"] .border-gray-200 { border-color: #334155; }
+[data-theme="dark"] .border-gray-300 { border-color: #475569; }
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+[data-theme="dark"] ::placeholder { color: #64748b; }
+[data-theme="dark"] option { background-color: #0f172a; color: #f1f5f9; }
+
+/* Status badges and alert boxes: soft translucent tints instead of pastels. */
+[data-theme="dark"] .bg-green-50,  [data-theme="dark"] .bg-green-100  { background-color: rgba(34, 197, 94, 0.16); }
+[data-theme="dark"] .bg-red-50,    [data-theme="dark"] .bg-red-100    { background-color: rgba(239, 68, 68, 0.16); }
+[data-theme="dark"] .bg-yellow-50, [data-theme="dark"] .bg-yellow-100 { background-color: rgba(234, 179, 8, 0.16); }
+[data-theme="dark"] .bg-blue-50,   [data-theme="dark"] .bg-blue-100   { background-color: rgba(59, 130, 246, 0.16); }
+[data-theme="dark"] .bg-amber-50,  [data-theme="dark"] .bg-amber-100  { background-color: rgba(245, 158, 11, 0.16); }
+[data-theme="dark"] .text-green-600, [data-theme="dark"] .text-green-700 { color: #86efac; }
+[data-theme="dark"] .text-red-500, [data-theme="dark"] .text-red-600, [data-theme="dark"] .text-red-700 { color: #fca5a5; }
+[data-theme="dark"] .text-yellow-700, [data-theme="dark"] .text-yellow-800 { color: #fde047; }
+[data-theme="dark"] .text-blue-600, [data-theme="dark"] .text-blue-700 { color: #93c5fd; }
+[data-theme="dark"] .text-amber-600, [data-theme="dark"] .text-amber-700 { color: #fcd34d; }
+
+/* Tailwind v4 removed bg-opacity-*. The existing reject-reason modals use
+   "bg-black bg-opacity-50", which would otherwise render fully opaque. */
+.bg-black.bg-opacity-50 { background-color: rgb(0 0 0 / 0.5); }

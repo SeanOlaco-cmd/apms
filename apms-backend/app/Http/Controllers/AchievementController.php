@@ -9,14 +9,14 @@ class AchievementController extends Controller
 {
     public function index(Request $request)
     {
-        $query = FacultyAchievement::with(['school', 'academicPeriod']);
+        $query = FacultyAchievement::with(['school', 'program', 'academicPeriod']);
         $user = $request->user();
 
         if ($user->role === 'dean') {
             $query->where('school_id', $user->school_id);
         } elseif ($user->role === 'department_head') {
             $query->where('school_id', $user->school_id);
-            // faculty_performance/faculty_achievements are school-level (no program_id column)
+            // achievements are shown school-wide to every DH of that school
         }
 
         return $query->get();
@@ -28,15 +28,31 @@ class AchievementController extends Controller
 
         $request->validate([
             'academic_period_id' => 'required|exists:academic_periods,id',
-            'faculty_name' => 'required|string',
-            'achievement_title' => 'required|string',
+            'recipient_type' => 'sometimes|in:faculty,student',
+            'faculty_name' => 'required|string|max:255',
+            'year_level' => 'nullable|required_if:recipient_type,student|in:1st Year,2nd Year,3rd Year,4th Year,5th Year',
+            'section' => 'nullable|required_if:recipient_type,student|string|max:20',
+            'achievement_title' => 'required|string|max:255',
             'type' => 'required|in:research,publication,award,certification,training,other',
+            'date_awarded' => 'nullable|date',
+            'awarding_body' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
         ]);
+
+        // "faculty_name" is the recipient's name for both kinds (kept for
+        // backwards compatibility with existing records). Year level and
+        // section only mean something for student recipients.
+        $recipientType = $request->input('recipient_type', 'faculty');
+        $isStudent = $recipientType === 'student';
 
         $data = FacultyAchievement::create([
             'school_id' => $user->school_id,
+            'program_id' => $user->program_id,
             'academic_period_id' => $request->academic_period_id,
+            'recipient_type' => $recipientType,
             'faculty_name' => $request->faculty_name,
+            'year_level' => $isStudent ? $request->year_level : null,
+            'section' => $isStudent ? $request->section : null,
             'achievement_title' => $request->achievement_title,
             'type' => $request->type,
             'date_awarded' => $request->date_awarded,
@@ -51,7 +67,7 @@ class AchievementController extends Controller
 
     public function show(FacultyAchievement $achievement)
     {
-        return $achievement->load(['school', 'academicPeriod']);
+        return $achievement->load(['school', 'program', 'academicPeriod']);
     }
 
     public function resubmit(Request $request, FacultyAchievement $achievement)
@@ -62,23 +78,37 @@ class AchievementController extends Controller
 
         $request->validate([
             'academic_period_id' => 'sometimes|exists:academic_periods,id',
-            'faculty_name' => 'sometimes|string',
-            'achievement_title' => 'sometimes|string',
+            'recipient_type' => 'sometimes|in:faculty,student',
+            'faculty_name' => 'sometimes|string|max:255',
+            'year_level' => 'sometimes|nullable|required_if:recipient_type,student|in:1st Year,2nd Year,3rd Year,4th Year,5th Year',
+            'section' => 'sometimes|nullable|required_if:recipient_type,student|string|max:20',
+            'achievement_title' => 'sometimes|string|max:255',
             'type' => 'sometimes|in:research,publication,award,certification,training,other',
             'date_awarded' => 'sometimes|nullable|date',
-            'awarding_body' => 'sometimes|nullable|string',
+            'awarding_body' => 'sometimes|nullable|string|max:255',
             'description' => 'sometimes|nullable|string',
         ]);
 
-        $achievement->update($request->only([
+        $fields = $request->only([
             'academic_period_id',
+            'recipient_type',
             'faculty_name',
+            'year_level',
+            'section',
             'achievement_title',
             'type',
             'date_awarded',
             'awarding_body',
             'description',
-        ]) + [
+        ]);
+
+        // A faculty recipient has no year level or section.
+        if (($fields['recipient_type'] ?? $achievement->recipient_type) === 'faculty') {
+            $fields['year_level'] = null;
+            $fields['section'] = null;
+        }
+
+        $achievement->update($fields + [
             'status' => 'pending',
             'rejection_reason' => null,
             'rejected_by' => null,

@@ -1,149 +1,105 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
+import ChangePassword from './pages/ChangePassword'
+
 import DashboardLayout from './layouts/DashboardLayout'
 import DHLayout from './layouts/DHLayout'
 import DeanLayout from './layouts/DeanLayout'
 import VPAALayout from './layouts/VPAALayout'
-import DHDashboard from './pages/dh/DHDashboard'
+import SystemAdminLayout from './layouts/SystemAdminLayout'
+
+import PresidentOverview from './pages/president/PresidentOverview'
+import PresidentReports from './pages/president/PresidentReports'
+
+import DHOverview from './pages/dh/DHOverview'
 import DHEnrollment from './pages/dh/DHEnrollment'
 import DHRetention from './pages/dh/DHRetention'
-import DHFacultyPerformance from './pages/dh/DHFacultyPerformance'
-import DHAchievements from './pages/dh/DHAchievements'
-import DHStudentPerformance from './pages/dh/DHStudentPerformance'
-import DHBoardExam from './pages/dh/DHBoardExam'
-import DHShifteeTransferee from './pages/dh/DHShifteeTransferee'
-import DHEmployees from './pages/dh/DHEmployees'
-import DeanDashboard from './pages/dean/DeanDashboard'
-import DeanEnrollment from './pages/dean/DeanEnrollment'
+
+import DeanOverview from './pages/dean/DeanOverview'
+import DeanApprovals from './pages/dean/DeanApprovals'
+import DeanReviewReport from './pages/dean/DeanReviewReport'
 import DeanRetention from './pages/dean/DeanRetention'
-import DeanFacultyPerformance from './pages/dean/DeanFacultyPerformance'
+import DeanFaculty from './pages/dean/DeanFaculty'
 import DeanAchievements from './pages/dean/DeanAchievements'
-import DeanStudentPerformance from './pages/dean/DeanStudentPerformance'
-import DeanBoardExam from './pages/dean/DeanBoardExam'
-import DeanShifteeTransferee from './pages/dean/DeanShifteeTransferee'
-import DeanEmployees from './pages/dean/DeanEmployees'
-import VPAADashboard from './pages/vpaa/VPAADashboard'
-import VPAAEnrollment from './pages/vpaa/VPAAEnrollment'
-import VPAARetention from './pages/vpaa/VPAARetention'
-import VPAAShifteeTransferee from './pages/vpaa/VPAAShifteeTransferee'
-import VPAAFacultyPerformance from './pages/vpaa/VPAAFacultyPerformance'
+
+import VPAAOverview from './pages/vpaa/VPAAOverview'
+import VPAAApprovals from './pages/vpaa/VPAAApprovals'
+import VPAAReviewReport from './pages/vpaa/VPAAReviewReport'
+import VPAAFaculty from './pages/vpaa/VPAAFaculty'
 import VPAAAchievements from './pages/vpaa/VPAAAchievements'
-import VPAABoardExam from './pages/vpaa/VPAABoardExam'
 import VPAAClassMonitoring from './pages/vpaa/VPAAClassMonitoring'
-import VPAAStudentPerformance from './pages/vpaa/VPAAStudentPerformance'
-import VPAAEmployees from './pages/vpaa/VPAAEmployees'
-import VPAAUsers from './pages/vpaa/VPAAUsers'
-import VPAABackup from './pages/vpaa/VPAABackup'
-import SystemAdminLayout from './layouts/SystemAdminLayout'
+
 import SystemAdminDashboard from './pages/admin/SystemAdminDashboard'
 import SystemAdminUsers from './pages/admin/SystemAdminUsers'
-import ChangePassword from './pages/ChangePassword'
-import Enrollment from './pages/Enrollment'
-import Retention from './pages/Retention'
-import FacultyPerformance from './pages/FacultyPerformance'
-import Achievements from './pages/Achievements'
-import StudentPerformance from './pages/StudentPerformance'
-import BoardExam from './pages/BoardExam'
-import ClassMonitoring from './pages/ClassMonitoring'
-import ShifteeTransferee from './pages/ShifteeTransferee'
-import VPAAAcademicPeriods from './pages/vpaa/VPAAAcademicPeriods'
-import ProtectedRoute from './components/ProtectedRoute'
 import AdminAcademicPeriods from './pages/admin/AdminAcademicPeriods'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
 
-      {/* President Routes */}
-      <Route path="/dashboard" element={<DashboardLayout title="Overview" />}>
-        <Route index element={<Dashboard />} />
-        <Route path="enrollment" element={<Enrollment />} />
-        <Route path="retention" element={<Retention />} />
-        <Route path="shiftee-transferee" element={<ShifteeTransferee />} />
-        <Route path="faculty-performance" element={<FacultyPerformance />} />
-        <Route path="achievements" element={<Achievements />} />
-        <Route path="board-exam" element={<BoardExam />} />
-        <Route path="class-monitoring" element={<ClassMonitoring />} />
-        <Route path="student-performance" element={<StudentPerformance />} />
+      {/* President — read-only, fully approved data only */}
+      <Route path="/dashboard" element={
+        <ProtectedRoute allowedRoles={['president']}><DashboardLayout /></ProtectedRoute>
+      }>
+        <Route index element={<PresidentOverview />} />
+        <Route path="reports" element={<PresidentReports />} />
         <Route path="change-password" element={<ChangePassword />} />
-        <Route path="/dashboard" element={
-          <ProtectedRoute allowedRoles={['president']}><DashboardLayout title="Overview" /></ProtectedRoute>
-        }>
-
-        </Route>
       </Route>
 
-      {/* Dean Routes — pure approver again */}
-      <Route path="/dean" element={<DeanLayout />}>
-        <Route path="dashboard" element={<DeanDashboard />} />
-        <Route path="enrollment" element={<DeanEnrollment />} />
-        <Route path="retention" element={<DeanRetention />} />
-        <Route path="shiftee-transferee" element={<DeanShifteeTransferee />} />
-        <Route path="faculty-performance" element={<DeanFacultyPerformance />} />
-        <Route path="achievements" element={<DeanAchievements />} />
-        <Route path="board-exam" element={<DeanBoardExam />} />
-        <Route path="student-performance" element={<DeanStudentPerformance />} />
-        <Route path="employees" element={<DeanEmployees />} />
-        <Route path="change-password" element={<ChangePassword />} />
-         <Route path="/dean" element={
-          <ProtectedRoute allowedRoles={['dean']}><DeanLayout /></ProtectedRoute>
-          }></Route>
-
-      </Route>
-
-      {/* VPAA Routes — read-only oversight on the 8 DH/Dean categories */}
-      <Route path="/vpaa" element={<VPAALayout />}>
-        <Route path="dashboard" element={<VPAADashboard />} />
-        <Route path="enrollment" element={<VPAAEnrollment />} />
-        <Route path="retention" element={<VPAARetention />} />
-        <Route path="shiftee-transferee" element={<VPAAShifteeTransferee />} />
-        <Route path="faculty-performance" element={<VPAAFacultyPerformance />} />
-        <Route path="achievements" element={<VPAAAchievements />} />
-        <Route path="board-exam" element={<VPAABoardExam />} />
-        <Route path="class-monitoring" element={<VPAAClassMonitoring />} />
-        <Route path="student-performance" element={<VPAAStudentPerformance />} />
-        <Route path="employees" element={<VPAAEmployees />} />
-        <Route path="users" element={<VPAAUsers />} />
-        <Route path="backup" element={<VPAABackup />} />
-        <Route path="change-password" element={<ChangePassword />} />
-        <Route path="academic-periods" element={<VPAAAcademicPeriods />} />
-        <Route path="/vpaa" element={
-        <ProtectedRoute allowedRoles={['vpaa']}><VPAALayout /></ProtectedRoute>
-        }></Route>
-
-      </Route>
-
-      {/* Department Head Routes — back per presidential decree */}
-      <Route path="/dh" element={<DHLayout />}>
-        <Route path="dashboard" element={<DHDashboard />} />
+      {/* Department Head — records enrollment and retention for their own program */}
+      <Route path="/dh" element={
+        <ProtectedRoute allowedRoles={['department_head']}><DHLayout /></ProtectedRoute>
+      }>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<DHOverview />} />
         <Route path="enrollment" element={<DHEnrollment />} />
         <Route path="retention" element={<DHRetention />} />
-        <Route path="shiftee-transferee" element={<DHShifteeTransferee />} />
-        <Route path="faculty-performance" element={<DHFacultyPerformance />} />
-        <Route path="achievements" element={<DHAchievements />} />
-        <Route path="board-exam" element={<DHBoardExam />} />
-        <Route path="student-performance" element={<DHStudentPerformance />} />
-        <Route path="employees" element={<DHEmployees />} />
         <Route path="change-password" element={<ChangePassword />} />
-        <Route path="/dh" element={
-          <ProtectedRoute allowedRoles={['department_head']}><DHLayout /></ProtectedRoute>
-        }></Route>
-
       </Route>
 
-      {/* System Admin Routes */}
-      <Route path="/admin" element={<SystemAdminLayout />}>
+      {/* Dean — pre-approves reports, records faculty status and achievements */}
+      <Route path="/dean" element={
+        <ProtectedRoute allowedRoles={['dean']}><DeanLayout /></ProtectedRoute>
+      }>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<DeanOverview />} />
+        <Route path="approvals" element={<DeanApprovals />} />
+        <Route path="approvals/:kind/:id" element={<DeanReviewReport />} />
+        <Route path="retention" element={<DeanRetention />} />
+        <Route path="faculty" element={<DeanFaculty />} />
+        <Route path="achievements" element={<DeanAchievements />} />
+        <Route path="change-password" element={<ChangePassword />} />
+      </Route>
+
+      {/* VPAA — final approval, faculty and achievement approval, class monitoring */}
+      <Route path="/vpaa" element={
+        <ProtectedRoute allowedRoles={['vpaa']}><VPAALayout /></ProtectedRoute>
+      }>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<VPAAOverview />} />
+        <Route path="approvals" element={<VPAAApprovals />} />
+        <Route path="approvals/:kind/:id" element={<VPAAReviewReport />} />
+        <Route path="faculty" element={<VPAAFaculty />} />
+        <Route path="achievements" element={<VPAAAchievements />} />
+        <Route path="class-monitoring" element={<VPAAClassMonitoring />} />
+        <Route path="change-password" element={<ChangePassword />} />
+      </Route>
+
+      {/* System Admin — accounts and academic periods (plan to follow) */}
+      <Route path="/admin" element={
+        <ProtectedRoute allowedRoles={['system_admin']}><SystemAdminLayout /></ProtectedRoute>
+      }>
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<SystemAdminDashboard />} />
         <Route path="users" element={<SystemAdminUsers />} />
-        <Route path="change-password" element={<ChangePassword />} />
-        <Route path="/admin" element={
-          <ProtectedRoute allowedRoles={['system_admin']}><SystemAdminLayout /></ProtectedRoute>
-        }></Route>
         <Route path="academic-periods" element={<AdminAcademicPeriods />} />
+        <Route path="change-password" element={<ChangePassword />} />
       </Route>
+
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
 }

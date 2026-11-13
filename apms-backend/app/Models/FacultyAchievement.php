@@ -8,8 +8,12 @@ class FacultyAchievement extends Model
 {
     protected $fillable = [
         'school_id',
+        'program_id',
         'academic_period_id',
+        'recipient_type',
         'faculty_name',
+        'year_level',
+        'section',
         'achievement_title',
         'type',
         'date_awarded',
@@ -28,6 +32,11 @@ class FacultyAchievement extends Model
     public function school()
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function program()
+    {
+        return $this->belongsTo(Program::class);
     }
 
     public function academicPeriod()

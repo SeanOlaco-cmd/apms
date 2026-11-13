@@ -26,6 +26,7 @@ class Employee extends Model
         'rejected_by',
         'vpaa_approved_by',
         'vpaa_approved_at',
+        'notes',
     ];
 
     public function school()

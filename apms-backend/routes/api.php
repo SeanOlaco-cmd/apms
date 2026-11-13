@@ -8,6 +8,10 @@ use App\Http\Controllers\BoardExamResultController;
 use App\Http\Controllers\ClassMonitoringController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\ClassMonitoringLogController;
+use App\Http\Controllers\DeptAchievementController;
+use App\Http\Controllers\RetentionRecordController;
+use App\Http\Controllers\RetentionReportController;
 use App\Http\Controllers\FacultyPerformanceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProgramController;
@@ -25,8 +29,12 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/logout-all', [AuthController::class, 'logoutAll']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
+    Route::put('/profile/username', [AuthController::class, 'updateUsername']);
+    Route::post('/profile/avatar', [AuthController::class, 'uploadAvatar']);
+    Route::delete('/profile/avatar', [AuthController::class, 'removeAvatar']);
 
     // ---------------------------------------------------------------
     // The 8 DH-owned categories.
@@ -47,7 +55,6 @@ Route::middleware('auth:sanctum')->group(function () {
             'achievements' => ['controller' => AchievementController::class, 'param' => 'achievement'],
             'board-exam-results' => ['controller' => BoardExamResultController::class, 'param' => 'boardExamResult'],
             'student-performance' => ['controller' => StudentPerformanceController::class, 'param' => 'studentPerformance'],
-            'employees' => ['controller' => EmployeeController::class, 'param' => 'employee'],
         ] as $uri => $config
     ) {
         $controller = $config['controller'];
@@ -133,4 +140,50 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
     Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
+
+    // ===================================================================
+    // Revision — Oct 2026
+    // ===================================================================
+
+    // Faculty employment status: the DEAN records it, the VPAA approves it.
+    Route::middleware('role:dean,vpaa,president')->get('/employees', [EmployeeController::class, 'index']);
+    Route::middleware('role:dean,vpaa,president')->get('/employees/{employee}', [EmployeeController::class, 'show']);
+    Route::middleware('role:dean')->post('/employees', [EmployeeController::class, 'store']);
+    Route::middleware('role:dean')->put('/employees/{employee}', [EmployeeController::class, 'resubmit']);
+    Route::middleware('role:dean')->patch('/employees/{employee}', [EmployeeController::class, 'resubmit']);
+    Route::middleware('role:vpaa')->put('/employees/{employee}/vpaa-review', [EmployeeController::class, 'vpaaReview']);
+    Route::middleware('role:vpaa')->patch('/employees/{employee}/vpaa-review', [EmployeeController::class, 'vpaaReview']);
+    Route::middleware('role:dean')->delete('/employees/{employee}', [EmployeeController::class, 'destroy']);
+
+    // Retention: student movement records (DH) grouped into one report per program per period.
+    Route::middleware('role:department_head,dean,vpaa,president')->get('/retention-records', [RetentionRecordController::class, 'index']);
+    Route::middleware('role:department_head')->post('/retention-records', [RetentionRecordController::class, 'store']);
+    Route::middleware('role:department_head')->put('/retention-records/{retentionRecord}', [RetentionRecordController::class, 'update']);
+    Route::middleware('role:department_head')->patch('/retention-records/{retentionRecord}', [RetentionRecordController::class, 'update']);
+    Route::middleware('role:department_head')->delete('/retention-records/{retentionRecord}', [RetentionRecordController::class, 'destroy']);
+
+    Route::middleware('role:department_head,dean,vpaa,president')->get('/retention-reports', [RetentionReportController::class, 'index']);
+    Route::middleware('role:department_head,dean,vpaa,president')->get('/retention-reports/{retentionReport}', [RetentionReportController::class, 'show']);
+    Route::middleware('role:department_head')->post('/retention-reports', [RetentionReportController::class, 'submit']);
+    Route::middleware('role:dean')->put('/retention-reports/{retentionReport}/review', [RetentionReportController::class, 'review']);
+    Route::middleware('role:dean')->patch('/retention-reports/{retentionReport}/review', [RetentionReportController::class, 'review']);
+    Route::middleware('role:vpaa')->put('/retention-reports/{retentionReport}/vpaa-review', [RetentionReportController::class, 'vpaaReview']);
+    Route::middleware('role:vpaa')->patch('/retention-reports/{retentionReport}/vpaa-review', [RetentionReportController::class, 'vpaaReview']);
+
+    // Departmental achievements / board exams: the DEAN records, the VPAA approves.
+    Route::middleware('role:dean,vpaa,president,system_admin')->get('/achievement-modules', [DeptAchievementController::class, 'modules']);
+    Route::middleware('role:dean,vpaa,president')->get('/dept-achievements', [DeptAchievementController::class, 'index']);
+    Route::middleware('role:dean')->post('/dept-achievements', [DeptAchievementController::class, 'store']);
+    Route::middleware('role:dean')->put('/dept-achievements/{deptAchievement}', [DeptAchievementController::class, 'resubmit']);
+    Route::middleware('role:dean')->patch('/dept-achievements/{deptAchievement}', [DeptAchievementController::class, 'resubmit']);
+    Route::middleware('role:vpaa')->put('/dept-achievements/{deptAchievement}/vpaa-review', [DeptAchievementController::class, 'vpaaReview']);
+    Route::middleware('role:vpaa')->patch('/dept-achievements/{deptAchievement}/vpaa-review', [DeptAchievementController::class, 'vpaaReview']);
+    Route::middleware('role:dean')->delete('/dept-achievements/{deptAchievement}', [DeptAchievementController::class, 'destroy']);
+
+    // Class monitoring (verdict-based): the VPAA enters it, the President can read it.
+    Route::middleware('role:vpaa,president')->get('/class-monitoring-logs', [ClassMonitoringLogController::class, 'index']);
+    Route::middleware('role:vpaa')->post('/class-monitoring-logs', [ClassMonitoringLogController::class, 'store']);
+    Route::middleware('role:vpaa')->put('/class-monitoring-logs/{classMonitoringLog}', [ClassMonitoringLogController::class, 'update']);
+    Route::middleware('role:vpaa')->patch('/class-monitoring-logs/{classMonitoringLog}', [ClassMonitoringLogController::class, 'update']);
+    Route::middleware('role:vpaa')->delete('/class-monitoring-logs/{classMonitoringLog}', [ClassMonitoringLogController::class, 'destroy']);
 });

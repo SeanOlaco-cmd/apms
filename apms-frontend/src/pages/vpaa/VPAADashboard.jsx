@@ -44,7 +44,7 @@ export default function VPAADashboard() {
       ];
 
       setStats({
-        pending: allData.filter(d => d.status === "pending").length,
+        pending: allData.filter(d => d.status === "dean_approved").length,
         approved: allData.filter(d => d.status === "approved").length,
         rejected: allData.filter(d => d.status === "rejected").length,
       });

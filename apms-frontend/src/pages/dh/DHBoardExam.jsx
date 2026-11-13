@@ -41,6 +41,10 @@ export default function DHBoardExam() {
     setSubmissions(mine);
   };
 
+  const blockInvalidKeys = (e) => {
+    if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
+  };
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleEdit = (row) => {
@@ -75,8 +79,9 @@ export default function DHBoardExam() {
       }
       setForm({ academic_period_id: activePeriodId, exam_name: "", exam_date: "", total_examinees: "", total_passers: "", passing_rate: "", first_timers: "", first_timer_passers: "", first_timer_passing_rate: "", notes: "" });
       loadData();
-    } catch {
-      setError("Failed to submit. Please check all fields.");
+    } catch (err) {
+      const firstFieldError = err.response?.data?.errors && Object.values(err.response.data.errors)[0]?.[0];
+      setError(firstFieldError || err.response?.data?.message || "Failed to submit. Please check all fields.");
     } finally {
       setLoading(false);
     }
@@ -116,32 +121,32 @@ export default function DHBoardExam() {
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Examinees</label>
-            <input type="number" name="total_examinees" value={form.total_examinees} onChange={handleChange}
+            <input type="number" name="total_examinees" value={form.total_examinees} onChange={handleChange} min="0" onKeyDown={blockInvalidKeys}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Total Passers</label>
-            <input type="number" name="total_passers" value={form.total_passers} onChange={handleChange}
+            <input type="number" name="total_passers" value={form.total_passers} onChange={handleChange} min="0" onKeyDown={blockInvalidKeys}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">Passing Rate (%)</label>
-            <input type="number" name="passing_rate" value={form.passing_rate} onChange={handleChange}
+            <input type="number" name="passing_rate" value={form.passing_rate} onChange={handleChange} min="0" onKeyDown={blockInvalidKeys}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0.00" step="0.01" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">First Timers</label>
-            <input type="number" name="first_timers" value={form.first_timers} onChange={handleChange}
+            <input type="number" name="first_timers" value={form.first_timers} onChange={handleChange} min="0" onKeyDown={blockInvalidKeys}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">First Timer Passers</label>
-            <input type="number" name="first_timer_passers" value={form.first_timer_passers} onChange={handleChange}
+            <input type="number" name="first_timer_passers" value={form.first_timer_passers} onChange={handleChange} min="0" onKeyDown={blockInvalidKeys}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0" />
           </div>
           <div>
             <label className="text-sm font-medium text-gray-700">First Timer Passing Rate (%)</label>
-            <input type="number" name="first_timer_passing_rate" value={form.first_timer_passing_rate} onChange={handleChange}
+            <input type="number" name="first_timer_passing_rate" value={form.first_timer_passing_rate} onChange={handleChange} min="0" onKeyDown={blockInvalidKeys}
               className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" placeholder="0.00" step="0.01" />
           </div>
           <div className="col-span-2">
@@ -191,9 +196,10 @@ export default function DHBoardExam() {
                   <td className="py-3 px-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
                       ${row.status === 'approved' ? 'bg-green-100 text-green-700' :
+                        row.status === 'dean_approved' ? 'bg-blue-100 text-blue-700' :
                         row.status === 'rejected' ? 'bg-red-100 text-red-700' :
                         'bg-yellow-100 text-yellow-700'}`}>
-                      {row.status}
+                      {row.status === 'dean_approved' ? 'Awaiting VPAA' : row.status}
                     </span>
                   </td>
                   <td className="py-3 px-4">

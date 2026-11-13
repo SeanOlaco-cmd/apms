@@ -48,7 +48,7 @@ export default function DeanDashboard() {
 
       setStats({
         pending: allData.filter(d => d.status === "pending").length,
-        approved: allData.filter(d => d.status === "approved").length,
+        approved: allData.filter(d => d.status === "dean_approved" || d.status === "approved").length,
         rejected: allData.filter(d => d.status === "rejected").length,
       });
     } catch {
