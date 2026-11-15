@@ -113,6 +113,10 @@ class AcademicPeriodController extends Controller
             'student_performance',
             'class_monitoring',
             'employee_data',
+            'retention_reports',
+            'retention_records',
+            'dept_achievements',
+            'class_monitoring_logs',
         ];
 
         foreach ($tables as $table) {

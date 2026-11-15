@@ -1,75 +1,85 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/axios";
+import { ArrowRight, CalendarDays, UserCheck, UserX, Users } from "lucide-react";
+import useApi from "../../lib/useApi";
+import { useAcademic } from "../../context/AcademicContext";
+import { num } from "../../lib/format";
+import { Card, Loading, Notice, PageHeader, SectionTitle, Tile, TileGrid } from "../../components/ui";
+
+const ROLES = [
+  { value: "president", label: "College President" },
+  { value: "vpaa", label: "VPAA" },
+  { value: "dean", label: "Deans" },
+  { value: "department_head", label: "Department Heads" },
+  { value: "system_admin", label: "System Admins" },
+];
 
 export default function SystemAdminDashboard() {
-  const [user, setUser] = useState(null);
-  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0 });
   const navigate = useNavigate();
+  const { activePeriod, periods, ready } = useAcademic();
+  const { data: users, loading, error } = useApi("/users");
 
-  useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (!stored) {
-      navigate("/login");
-    } else {
-      const parsed = JSON.parse(stored);
-      if (parsed.role !== "system_admin") {
-        navigate("/login");
-      } else {
-        setUser(parsed);
-        loadStats();
-      }
-    }
-  }, [navigate]);
+  const active = users.filter((u) => u.is_active).length;
+  const semester = activePeriod
+    ? (activePeriod.semester === "Summer" ? "Summer" : `${activePeriod.semester} Semester`)
+    : "";
 
-  const loadStats = async () => {
-    try {
-      const res = await api.get("/users");
-      setStats({
-        total: res.data.length,
-        active: res.data.filter((u) => u.is_active).length,
-        inactive: res.data.filter((u) => !u.is_active).length,
-      });
-    } catch {
-      console.error("Failed to load stats");
-    }
-  };
+  const links = [
+    { label: "User Management", note: "Create accounts and switch them on or off.", path: "/admin/users", icon: Users },
+    { label: "Academic Periods", note: "Set the school year and semester everyone reports against.", path: "/admin/academic-periods", icon: CalendarDays },
+  ];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Welcome, {user?.name}! 👋</h1>
-        <p className="text-red-200 text-sm mt-1">System Admin Portal — Manage user accounts.</p>
-      </div>
+    <>
+      <PageHeader eyebrow="System Admin Dashboard" title="System Overview" showYear={false}
+        subtitle="Manage user accounts and the academic period used across the system." />
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="text-3xl mb-3">👥</div>
-          <p className="text-gray-500 text-xs font-medium uppercase">Total Users</p>
-          <p className="text-3xl font-bold text-gray-800 mt-1">{stats.total}</p>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="text-3xl mb-3">✅</div>
-          <p className="text-gray-500 text-xs font-medium uppercase">Active</p>
-          <p className="text-3xl font-bold text-green-600 mt-1">{stats.active}</p>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="text-3xl mb-3">🚫</div>
-          <p className="text-gray-500 text-xs font-medium uppercase">Inactive</p>
-          <p className="text-3xl font-bold text-red-600 mt-1">{stats.inactive}</p>
-        </div>
-      </div>
+      {error && <Notice kind="error">{error}</Notice>}
+      {ready && !activePeriod && (
+        <Notice kind="error">
+          No academic period is active. Department Heads cannot submit reports until you set one in Academic Periods.
+        </Notice>
+      )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">Quick Access</h3>
-        <div
-          onClick={() => navigate("/admin/users")}
-          className="border border-gray-200 rounded-lg p-4 flex items-center gap-3 cursor-pointer hover:shadow-md transition max-w-xs"
-        >
-          <div className="text-2xl">👤</div>
-          <p className="font-semibold text-gray-800 text-sm">User Management</p>
+      <Card>
+        <SectionTitle icon={Users} tone="lavender" title="User Accounts" subtitle="Everyone who can sign in to the system." />
+        {loading ? <Loading /> : (
+          <TileGrid min="10rem">
+            <Tile icon={Users} tone="lavender" label="Total Users" value={num(users.length)} note="all accounts" />
+            <Tile icon={UserCheck} tone="green" label="Active" value={num(active)} note="can sign in" />
+            <Tile icon={UserX} tone="red" label="Inactive" value={num(users.length - active)} note="sign-in blocked" />
+            <Tile icon={CalendarDays} tone="blue" label="Active Period"
+              value={activePeriod ? activePeriod.school_year.replace("-", "–") : "None"}
+              note={activePeriod ? semester : `${num(periods.length)} period${periods.length === 1 ? "" : "s"} on record`} />
+          </TileGrid>
+        )}
+      </Card>
+
+      <Card>
+        <SectionTitle icon={UserCheck} tone="green" title="Accounts by Role" subtitle="How many accounts each role has." />
+        {loading ? <Loading /> : (
+          <TileGrid min="9.5rem">
+            {ROLES.map((r) => (
+              <Tile key={r.value} small label={r.label} value={num(users.filter((u) => u.role === r.value).length)} />
+            ))}
+          </TileGrid>
+        )}
+      </Card>
+
+      <Card>
+        <SectionTitle icon={ArrowRight} tone="orange" title="Quick Access" />
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(16rem, 1fr))" }}>
+          {links.map((l) => (
+            <button key={l.path} type="button" className="ap-card text-left" style={{ cursor: "pointer" }} onClick={() => navigate(l.path)}>
+              <div className="flex items-center justify-between">
+                <l.icon size={18} />
+                <ArrowRight size={14} />
+              </div>
+              <p className="ap-card-title" style={{ marginTop: "0.5rem" }}>{l.label}</p>
+              <p className="ap-hint">{l.note}</p>
+            </button>
+          ))}
         </div>
-      </div>
-    </div>
+      </Card>
+    </>
   );
 }

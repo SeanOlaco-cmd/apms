@@ -1,192 +1,165 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { RefreshCw, Save } from "lucide-react";
 import api from "../../api/axios";
+import useApi, { apiError } from "../../lib/useApi";
+import { formatDate } from "../../lib/format";
+import { Button, Card, Empty, Field, Loading, Notice, PageHeader, SelectInput, TextInput } from "../../components/ui";
+
+const SEMESTERS = [
+  { value: "1st", label: "1st Semester" },
+  { value: "2nd", label: "2nd Semester" },
+  { value: "Summer", label: "Summer" },
+];
+const semesterLabel = (s) => SEMESTERS.find((x) => x.value === s)?.label ?? s;
+const ORDER = { "1st": 1, "2nd": 2, Summer: 3 };
+
+const emptyForm = { school_year: "", semester: "1st", start_date: "", end_date: "", is_active: false };
 
 export default function AdminAcademicPeriods() {
-  const [periods, setPeriods] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: periods, loading, error: loadError, reload } = useApi("/academic-periods");
+  const [form, setForm] = useState(emptyForm);
+  const [editId, setEditId] = useState(null);
+  const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
-  const [editId, setEditId] = useState(null);
 
-  const emptyForm = { school_year: "", semester: "1st", start_date: "", end_date: "", is_active: false };
-  const [form, setForm] = useState(emptyForm);
+  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+  const reset = () => { setForm(emptyForm); setEditId(null); setError(""); };
 
-  useEffect(() => {
-    loadPeriods();
-  }, []);
+  const yearOk = /^\d{4}-\d{4}$/.test(form.school_year.trim());
+  const canSave = !busy && yearOk && form.semester;
 
-  const loadPeriods = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/academic-periods");
-      setPeriods(res.data);
-    } catch {
-      setError("Failed to load academic periods.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+  const save = async () => {
+    setBusy(true); setError(""); setSuccess("");
+    const payload = { ...form, school_year: form.school_year.trim() };
     try {
       if (editId) {
-        await api.put(`/academic-periods/${editId}`, form);
+        await api.put(`/academic-periods/${editId}`, payload);
         setSuccess("Period updated.");
       } else {
-        await api.post("/academic-periods", form);
+        await api.post("/academic-periods", payload);
         setSuccess("Period created.");
       }
-      setForm(emptyForm);
-      setEditId(null);
-      loadPeriods();
+      setForm(emptyForm); setEditId(null);
+      reload();
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.errors?.semester?.[0] || "Save failed.";
-      setError(msg);
+      setError(apiError(err, "Could not save the period."));
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleEdit = (p) => {
+  const edit = (p) => {
+    setEditId(p.id); setError(""); setSuccess("");
     setForm({
-      school_year: p.school_year,
-      semester: p.semester,
-      start_date: p.start_date ?? "",
-      end_date: p.end_date ?? "",
-      is_active: p.is_active,
+      school_year: p.school_year, semester: p.semester,
+      start_date: (p.start_date ?? "").slice(0, 10), end_date: (p.end_date ?? "").slice(0, 10),
+      is_active: !!p.is_active,
     });
-    setEditId(p.id);
-    setError("");
-    setSuccess("");
+    window.scrollTo?.(0, 0);
   };
 
-  const handleSetActive = async (p) => {
-    setError("");
-    setSuccess("");
+  const setActive = async (p) => {
+    setError(""); setSuccess("");
     try {
       await api.put(`/academic-periods/${p.id}`, { is_active: true });
-      setSuccess("Period set as active.");
-      loadPeriods();
-    } catch {
-      setError("Failed to activate period.");
+      setSuccess(`${p.school_year.replace("-", "–")} · ${semesterLabel(p.semester)} is now the active period.`);
+      reload();
+    } catch (err) {
+      setError(apiError(err, "Could not activate the period."));
     }
   };
 
-  const handleDelete = async (p) => {
-    if (!window.confirm(`Delete academic period "${p.school_year} - ${p.semester}"?`)) return;
-    setError("");
-    setSuccess("");
+  const remove = async (p) => {
+    if (!window.confirm(`Delete academic period "${p.school_year} · ${semesterLabel(p.semester)}"?`)) return;
+    setError(""); setSuccess("");
     try {
       await api.delete(`/academic-periods/${p.id}`);
       setSuccess("Period deleted.");
-      loadPeriods();
+      reload();
     } catch (err) {
-      setError(err.response?.data?.message || "Delete failed.");
+      setError(apiError(err, "Could not delete the period."));
     }
   };
 
+  const rows = [...periods].sort((a, b) =>
+    b.school_year.localeCompare(a.school_year) || (ORDER[b.semester] ?? 0) - (ORDER[a.semester] ?? 0));
+  const active = periods.find((p) => p.is_active);
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Academic Periods 🗓️</h1>
-        <p className="text-red-200 text-sm mt-1">Manage the school years and semesters everyone submits data against.</p>
-      </div>
+    <>
+      <PageHeader crumb="Academic Periods" title="Academic Periods" showYear={false}
+        subtitle="Manage the school years and semesters everyone submits data against." />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">{editId ? "Edit Period" : "Create Period"}</h3>
-        {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg mb-4">{success}</div>}
-        {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">School Year</label>
-            <input type="text" name="school_year" value={form.school_year} onChange={handleChange}
-              placeholder="2026-2027" required
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Semester</label>
-            <select name="semester" value={form.semester} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-              <option value="1st">1st</option>
-              <option value="2nd">2nd</option>
-              <option value="Summer">Summer</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Start Date</label>
-            <input type="date" name="start_date" value={form.start_date} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">End Date</label>
-            <input type="date" name="end_date" value={form.end_date} onChange={handleChange}
-              className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]" />
-          </div>
-          <div className="col-span-2 flex items-center gap-2">
-            <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleChange} id="is_active" />
-            <label htmlFor="is_active" className="text-sm font-medium text-gray-700">Set as active (only one can be active)</label>
-          </div>
-          <div className="col-span-2 flex gap-2 mt-2">
-            <button type="submit" className="bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition">
-              {editId ? "Update" : "Create"}
-            </button>
-            {editId && (
-              <button type="button" onClick={() => { setForm(emptyForm); setEditId(null); setError(""); setSuccess(""); }}
-                className="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
+      <Notice kind={active || loading ? "info" : "error"}>
+        {active
+          ? `Active period: ${active.school_year.replace("-", "–")} · ${semesterLabel(active.semester)}. New reports are filed under it.`
+          : loading ? "Loading periods…" : "No period is active. Department Heads cannot submit reports until you set one."}
+      </Notice>
+      {loadError && <Notice kind="error">{loadError}</Notice>}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">All Periods</h3>
-        {loading ? <p className="text-gray-400 text-sm">Loading...</p>
-        : periods.length === 0 ? <p className="text-gray-400 text-sm">No academic periods yet.</p>
-        : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">School Year</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Semester</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Start</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">End</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {periods.map((p) => (
-                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-3 px-4">{p.school_year}</td>
-                  <td className="py-3 px-4">{p.semester}</td>
-                  <td className="py-3 px-4">{p.start_date ?? "—"}</td>
-                  <td className="py-3 px-4">{p.end_date ?? "—"}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                      {p.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 flex gap-2">
-                    <button onClick={() => handleEdit(p)} className="bg-blue-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-600 transition">Edit</button>
-                    {!p.is_active && (
-                      <button onClick={() => handleSetActive(p)} className="bg-green-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-green-600 transition">Set Active</button>
-                    )}
-                    <button onClick={() => handleDelete(p)} className="bg-red-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-red-600 transition">Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <Card>
+        <h2 className="ap-card-title mb-4">{editId ? "Edit Period" : "New Period"}</h2>
+        {success && <div className="mb-4"><Notice kind="success">{success}</Notice></div>}
+        {error && <div className="mb-4"><Notice kind="error">{error}</Notice></div>}
+
+        <div className="ap-form-grid">
+          <Field label="School year" hint="Format: 2026-2027">
+            <TextInput value={form.school_year} onChange={(e) => set("school_year")(e.target.value)} placeholder="2026-2027" />
+          </Field>
+          <Field label="Semester">
+            <SelectInput value={form.semester} onChange={set("semester")} options={SEMESTERS} placeholder="Select semester…" />
+          </Field>
+          <Field label="Start date (optional)">
+            <input type="date" className="ap-input" value={form.start_date} onChange={(e) => set("start_date")(e.target.value)} />
+          </Field>
+          <Field label="End date (optional)">
+            <input type="date" className="ap-input" value={form.end_date} min={form.start_date || undefined}
+              onChange={(e) => set("end_date")(e.target.value)} />
+          </Field>
+          <label className="span-2 flex items-center gap-2" style={{ cursor: "pointer" }}>
+            <input type="checkbox" checked={form.is_active} onChange={(e) => set("is_active")(e.target.checked)} />
+            <span className="ap-label" style={{ margin: 0 }}>Set as the active period (only one can be active)</span>
+          </label>
+        </div>
+        <div className="ap-form-actions">
+          <Button icon={Save} onClick={save} disabled={!canSave}>{busy ? "Saving…" : editId ? "Update Period" : "Create Period"}</Button>
+          <Button variant="ghost" icon={RefreshCw} onClick={reset}>{editId ? "Cancel Edit" : "Reset Form"}</Button>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="ap-card-title mb-4">All Periods</h2>
+        {loading ? <Loading /> : rows.length === 0 ? <Empty>No academic periods yet.</Empty> : (
+          <div className="ap-table-wrap">
+            <table className="ap-table">
+              <thead>
+                <tr>{["School year", "Semester", "Start", "End", "Status", "Action"].map((h) => <th key={h} className="py-3 px-4">{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {rows.map((p) => (
+                  <tr key={p.id}>
+                    <td className="py-3 px-4 strong">{p.school_year.replace("-", "–")}</td>
+                    <td className="py-3 px-4">{semesterLabel(p.semester)}</td>
+                    <td className="py-3 px-4">{formatDate((p.start_date ?? "").slice(0, 10))}</td>
+                    <td className="py-3 px-4">{formatDate((p.end_date ?? "").slice(0, 10))}</td>
+                    <td className="py-3 px-4">
+                      <span className={`ap-badge ${p.is_active ? "b-approved" : "b-neutral"}`}>{p.is_active ? "Active" : "Inactive"}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex gap-2">
+                        <Button small variant="ghost" onClick={() => edit(p)}>Edit</Button>
+                        {!p.is_active && <Button small onClick={() => setActive(p)}>Set Active</Button>}
+                        {!p.is_active && <Button small variant="reject" onClick={() => remove(p)}>Delete</Button>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
-    </div>
+      </Card>
+    </>
   );
 }

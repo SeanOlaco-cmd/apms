@@ -1,263 +1,196 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { Plus, Save, X } from "lucide-react";
 import api from "../../api/axios";
+import useApi, { apiError } from "../../lib/useApi";
+import { useAcademic } from "../../context/AcademicContext";
+import { programChip } from "../../lib/academic";
+import {
+  Button, Card, Empty, Field, Loading, Notice, PageHeader, Pills, SearchBox, SelectInput, TextInput,
+} from "../../components/ui";
+
+const ROLES = [
+  { value: "president", label: "President" },
+  { value: "vpaa", label: "VPAA" },
+  { value: "dean", label: "Dean" },
+  { value: "department_head", label: "Department Head" },
+  { value: "system_admin", label: "System Admin" },
+];
+const roleLabel = (role) => ROLES.find((r) => r.value === role)?.label ?? role;
+const ROLE_PILLS = [{ value: "all", label: "All" }, ...ROLES];
+
+const emptyForm = { name: "", email: "", password: "", role: "dean", school_id: "", program_id: "", is_active: true };
 
 export default function SystemAdminUsers() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const { user: me, schools, schoolPrograms } = useAcademic();
+  const { data: users, loading, error: loadError, reload } = useApi("/users");
+
+  const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState(null);
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [busy, setBusy] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
 
-  const emptyForm = {
-    name: "",
-    email: "",
-    password: "",
-    role: "dean",
-    school_id: "",
-    program_id: "",
-    is_active: true,
-  };
-  const [form, setForm] = useState(emptyForm);
+  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+  const setSchool = (value) => setForm((f) => ({ ...f, school_id: value, program_id: "" }));
+  const programs = form.school_id ? schoolPrograms(form.school_id) : [];
 
-  const [schools, setSchools] = useState([]);
-  const [programs, setPrograms] = useState([]);
+  const closeForm = () => { setShowForm(false); setEditUser(null); setForm(emptyForm); setError(""); };
+  const openNew = () => { setEditUser(null); setForm(emptyForm); setError(""); setSuccess(""); setShowForm(true); };
 
-  useEffect(() => {
-    loadData();
-    api.get("/schools").then((res) => setSchools(res.data));
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const res = await api.get("/users");
-      setUsers(res.data);
-    } catch {
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
+  const openEdit = (u) => {
+    setEditUser(u); setError(""); setSuccess("");
+    setForm({
+      name: u.name, email: u.email, password: "", // never sent on edit — see save()
+      role: u.role, school_id: u.school_id ? String(u.school_id) : "", program_id: u.program_id ? String(u.program_id) : "",
+      is_active: u.is_active,
+    });
+    setShowForm(true);
+    window.scrollTo?.(0, 0);
   };
 
-  const handleSchoolChange = async (e) => {
-    const schoolId = e.target.value;
-    setForm({ ...form, school_id: schoolId, program_id: "" });
-    if (schoolId) {
-      const res = await api.get(`/programs?school_id=${schoolId}`);
-      setPrograms(res.data);
-    } else {
-      setPrograms([]);
-    }
-  };
+  const canSave = !busy && form.name.trim() && form.email.trim() && (editUser || form.password);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async () => {
-    setError("");
-    setSuccess("");
+  const save = async () => {
+    setBusy(true); setError(""); setSuccess("");
     try {
       if (editUser) {
-        // Password is NEVER sent on edit — System Admin can't change it,
-        // by design. The key must be omitted entirely, not just blank:
-        // the backend checks $request->has('password'), which is true
-        // even for an empty string. Sending the key at all would 403
-        // every edit, not just password changes.
+        // The password key must be left out entirely on edit: the server
+        // rejects any update that contains it, even when it is blank.
         const { password, ...payload } = form;
         await api.put(`/users/${editUser.id}`, payload);
-        setSuccess("User updated successfully!");
+        setSuccess("User updated.");
       } else {
         await api.post("/users", form);
-        setSuccess("User created successfully!");
+        setSuccess("User created.");
       }
-      setShowForm(false);
-      setEditUser(null);
-      setForm(emptyForm);
-      loadData();
+      closeForm();
+      reload();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to save. Please check all fields.");
+      setError(apiError(err, "Could not save. Please check all fields."));
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleEdit = (user) => {
-    setEditUser(user);
-    setForm({
-      name: user.name,
-      email: user.email,
-      password: "", // never sent on edit — see handleSubmit
-      role: user.role,
-      school_id: user.school_id ?? "",
-      program_id: user.program_id ?? "",
-      is_active: user.is_active,
-    });
-    if (user.school_id) {
-      api.get(`/programs?school_id=${user.school_id}`).then((res) => setPrograms(res.data));
-    }
-    setShowForm(true);
-  };
-
-  const handleToggleActive = async (user) => {
-    setError("");
+  const toggleActive = async (u) => {
+    if (u.is_active && !window.confirm(`Deactivate ${u.name}? They will not be able to sign in.`)) return;
+    setError(""); setSuccess("");
     try {
-      await api.put(`/users/${user.id}`, { is_active: !user.is_active });
-      loadData();
+      await api.put(`/users/${u.id}`, { is_active: !u.is_active });
+      setSuccess(`${u.name} ${u.is_active ? "deactivated" : "activated"}.`);
+      reload();
     } catch (err) {
-      // Previously unhandled — a failed request here just did nothing
-      // visible, which looked identical to a successful no-op click.
-      setError(err.response?.data?.message || `Failed to ${user.is_active ? "deactivate" : "activate"} ${user.name}.`);
+      setError(apiError(err, `Could not ${u.is_active ? "deactivate" : "activate"} ${u.name}.`));
     }
   };
+
+  const needle = query.trim().toLowerCase();
+  const rows = users
+    .filter((u) => roleFilter === "all" || u.role === roleFilter)
+    .filter((u) => !needle || u.name.toLowerCase().includes(needle) || u.email.toLowerCase().includes(needle));
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="bg-[#7b1113] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">User Management 👤</h1>
-        <p className="text-red-200 text-sm mt-1">
-          Create, edit, activate, and deactivate accounts. Passwords are set once at creation — each account
-          owner changes their own password afterward from their Change Password page.
-        </p>
-      </div>
+    <>
+      <PageHeader crumb="User Management" title="User Management" showYear={false}
+        subtitle="Create, edit, activate and deactivate accounts."
+        right={!showForm && <Button icon={Plus} onClick={openNew}>Add New User</Button>} />
 
-      {success && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-lg">{success}</div>}
-
-      <div className="flex justify-end">
-        <button
-          onClick={() => { setShowForm(!showForm); setEditUser(null); setForm(emptyForm); }}
-          className="bg-[#7b1113] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#5e0d0f] transition"
-        >
-          {showForm && !editUser ? "Cancel" : "+ Add New User"}
-        </button>
-      </div>
+      <Notice kind="info">
+        Passwords are set once, when the account is created. After that, each account owner changes their own password
+        from their Change Password page.
+      </Notice>
+      {loadError && <Notice kind="error">{loadError}</Notice>}
+      {success && <Notice kind="success">{success}</Notice>}
+      {!showForm && error && <Notice kind="error">{error}</Notice>}
 
       {showForm && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-base font-semibold text-gray-800 mb-4">{editUser ? "Edit User" : "New User"}</h3>
-          {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Full Name</label>
-              <input type="text" name="name" value={form.name} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-                placeholder="Full name..." />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Email</label>
-              <input type="email" name="email" value={form.email} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]"
-                placeholder="email@cct.edu.ph" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                {editUser ? "Password" : "Initial Password"}
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={editUser ? "" : form.password}
-                onChange={handleChange}
-                disabled={!!editUser}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113] disabled:bg-gray-100 disabled:text-gray-400"
-                placeholder={editUser ? "Not editable — account owner changes their own" : "••••••••"}
-              />
-              {editUser && (
-                <p className="text-xs text-gray-400 mt-1">
-                  System Admin cannot change passwords. The account owner uses their own Change Password page.
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Role</label>
-              <select name="role" value={form.role} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-                <option value="president">President</option>
-                <option value="dean">Dean</option>
-                <option value="vpaa">VPAA</option>
-                <option value="department_head">Department Head</option>
-                <option value="system_admin">System Admin</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">School</label>
-              <select name="school_id" value={form.school_id} onChange={handleSchoolChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-                <option value="">None</option>
-                {schools.map(s => <option key={s.id} value={s.id}>{s.code} - {s.name}</option>)}
-              </select>
-              <p className="text-xs text-gray-400 mt-1">Required for Dean and Department Head accounts.</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Program</label>
-              <select name="program_id" value={form.program_id} onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7b1113]">
-                <option value="">None</option>
-                {programs.map(p => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
-              </select>
-              <p className="text-xs text-gray-400 mt-1">Required for Department Head accounts (their specific program).</p>
-            </div>
+        <Card>
+          <h2 className="ap-card-title mb-4">{editUser ? `Edit User · ${editUser.name}` : "New User"}</h2>
+          {error && <div className="mb-4"><Notice kind="error">{error}</Notice></div>}
+
+          <div className="ap-form-grid">
+            <Field label="Full name">
+              <TextInput value={form.name} onChange={(e) => set("name")(e.target.value)} placeholder="Enter full name…" />
+            </Field>
+            <Field label="Email">
+              <input type="email" className="ap-input" value={form.email} onChange={(e) => set("email")(e.target.value)}
+                placeholder="name@cct.edu.ph" />
+            </Field>
+            <Field label={editUser ? "Password" : "Initial password"}
+              hint={editUser
+                ? "Cannot be changed here. The account owner uses their own Change Password page."
+                : "7–12 characters: letters, numbers and the symbols _ @ $ ! % * # ? & . -"}>
+              <input type="password" className="ap-input" disabled={!!editUser} autoComplete="new-password"
+                value={editUser ? "" : form.password} onChange={(e) => set("password")(e.target.value)}
+                placeholder={editUser ? "Not editable" : "Enter initial password…"} />
+            </Field>
+            <Field label="Role">
+              <SelectInput value={form.role} onChange={set("role")} options={ROLES} placeholder="Select role…" />
+            </Field>
+            <Field label="School" hint="Required for Dean and Department Head accounts.">
+              <SelectInput value={form.school_id} onChange={setSchool} placeholder="None"
+                options={schools.map((s) => ({ value: String(s.id), label: `${s.code} · ${s.name}` }))} />
+            </Field>
+            <Field label="Program" hint="Required for Department Head accounts (their own program).">
+              <SelectInput value={form.program_id} onChange={set("program_id")} disabled={!form.school_id}
+                placeholder={form.school_id ? "None" : "Select a school first"}
+                options={programs.map((p) => ({ value: String(p.id), label: `${p.code} · ${p.name}` }))} />
+            </Field>
           </div>
-          <div className="flex gap-2 mt-4">
-            <button onClick={handleSubmit}
-              className="bg-[#7b1113] text-white font-semibold py-2 px-6 rounded-lg hover:bg-[#5e0d0f] transition">
-              {editUser ? "Update User" : "Create User"}
-            </button>
-            <button onClick={() => { setShowForm(false); setEditUser(null); }}
-              className="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">
-              Cancel
-            </button>
+          <div className="ap-form-actions">
+            <Button icon={Save} onClick={save} disabled={!canSave}>
+              {busy ? "Saving…" : editUser ? "Update User" : "Create User"}
+            </Button>
+            <Button variant="ghost" icon={X} onClick={closeForm}>Cancel</Button>
           </div>
-        </div>
+        </Card>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-base font-semibold text-gray-800 mb-4">All Users</h3>
-        {!showForm && error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-lg mb-4">{error}</div>}
-        {loading ? <p className="text-gray-400 text-sm">Loading...</p>
-        : users.length === 0 ? <p className="text-gray-400 text-sm">No users found.</p>
-        : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Name</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Email</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Role</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">School</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Status</th>
-                <th className="text-left py-3 px-4 text-gray-500 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-3 px-4 font-semibold">{user.name}</td>
-                  <td className="py-3 px-4">{user.email}</td>
-                  <td className="py-3 px-4 capitalize">{user.role.replace('_', ' ')}</td>
-                  <td className="py-3 px-4">{user.school?.code ?? "—"}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                      ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {user.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex gap-2">
-                      <button onClick={() => handleEdit(user)}
-                        className="bg-blue-500 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-600 transition">
-                        Edit
-                      </button>
-                      <button onClick={() => handleToggleActive(user)}
-                        className={`text-white text-xs px-3 py-1 rounded-lg transition
-                          ${user.is_active ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}>
-                        {user.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="ap-toolbar">
+        <SearchBox value={query} onChange={setQuery} placeholder="Search name or email…" />
+        <Pills label="Role" options={ROLE_PILLS} value={roleFilter} onChange={setRoleFilter} />
       </div>
-    </div>
+
+      <Card>
+        {loading ? <Loading /> : rows.length === 0 ? <Empty>No users match these filters.</Empty> : (
+          <div className="ap-table-wrap">
+            <table className="ap-table">
+              <thead>
+                <tr>{["Name", "Email", "Role", "School", "Program", "Status", "Action"].map((h) => <th key={h} className="py-3 px-4">{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {rows.map((u) => (
+                  <tr key={u.id}>
+                    <td className="py-3 px-4 strong">{u.name}</td>
+                    <td className="py-3 px-4">{u.email}</td>
+                    <td className="py-3 px-4">{roleLabel(u.role)}</td>
+                    <td className="py-3 px-4">{u.school?.code ?? "—"}</td>
+                    <td className="py-3 px-4">{u.program ? programChip(u.program) : "—"}</td>
+                    <td className="py-3 px-4">
+                      <span className={`ap-badge ${u.is_active ? "b-approved" : "b-rejected"}`}>{u.is_active ? "Active" : "Inactive"}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex gap-2">
+                        <Button small variant="ghost" onClick={() => openEdit(u)}>Edit</Button>
+                        {u.id === me?.id
+                          ? <span className="ap-hint" style={{ alignSelf: "center", marginTop: 0 }}>Your account</span>
+                          : (
+                            <Button small variant={u.is_active ? "reject" : "primary"} onClick={() => toggleActive(u)}>
+                              {u.is_active ? "Deactivate" : "Activate"}
+                            </Button>
+                          )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </>
   );
 }
