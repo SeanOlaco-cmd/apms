@@ -1,15 +1,29 @@
-import { Briefcase, ClipboardList, UserMinus, Users } from "lucide-react";
+import { useState } from "react";
+import { Award, Briefcase, ClipboardList, UserMinus, Users } from "lucide-react";
 import useApi from "../../lib/useApi";
 import { useAcademic } from "../../context/AcademicContext";
 import { ENROLLMENT_YEARS, yearLabel } from "../../lib/academic";
 import { latestBy, num } from "../../lib/format";
-import { Card, Empty, GroupedBars, Loading, PageHeader, SectionTitle, SingleBars, Tile, TileGrid } from "../../components/ui";
+import { cellValue } from "../../lib/deptAchievements";
+import {
+  Card, Empty, GroupedBars, Loading, PageHeader, Pills, SearchBox, SectionTitle, SingleBars, Tile, TileGrid,
+} from "../../components/ui";
+
+// "Level 3 · BSIT · 3rd Year": every filled field of the record except the name and notes.
+function details(record) {
+  const fields = (record.module?.fields ?? []).filter((f) => !["recipient_name", "notes"].includes(f.key));
+  const parts = fields.map((f) => cellValue(record, f)).filter((v) => v !== "—");
+  return parts.length ? parts.join(" · ") : "—";
+}
 
 export default function PresidentOverview() {
   const { schools, programs, periods, inYear } = useAcademic();
   const enr = useApi("/enrollment");
   const ret = useApi("/retention-reports");
   const emp = useApi("/employees");
+  const ach = useApi("/dept-achievements");
+  const [moduleId, setModuleId] = useState("all");
+  const [query, setQuery] = useState("");
 
   // The President only works with fully approved data.
   const approvedEnr = enr.data.filter((r) => r.status === "approved");
@@ -39,6 +53,23 @@ export default function PresidentOverview() {
   const reporting = latest.filter((x) => x.report).length;
   const faculty = emp.data.filter((r) => r.status === "approved" && inYear(r)).length;
   const loading = enr.loading || ret.loading;
+
+  // Approved achievements and board-exam passers of the selected academic year.
+  const achievements = ach.data.filter((r) => r.status === "approved" && inYear(r));
+  const moduleOptions = [
+    { value: "all", label: "All" },
+    ...[...new Map(achievements.map((r) => [r.module_id, r])).values()].map((r) => ({
+      value: String(r.module_id),
+      label: `${r.school?.code ? `${r.school.code} · ` : ""}${r.module?.name ?? "Achievement"}`,
+    })),
+  ];
+  const needle = query.trim().toLowerCase();
+  const achievementRows = achievements
+    .filter((r) => moduleId === "all" || String(r.module_id) === moduleId)
+    .filter((r) => !needle || (r.recipient_name ?? "").toLowerCase().includes(needle))
+    .sort((a, b) => String(a.school?.code).localeCompare(String(b.school?.code))
+      || String(a.module?.name).localeCompare(String(b.module?.name))
+      || String(a.recipient_name).localeCompare(String(b.recipient_name)));
 
   return (
     <>
@@ -71,6 +102,38 @@ export default function PresidentOverview() {
       <Card>
         <SectionTitle icon={Users} tone="orange" title="Enrollment Trend" subtitle="College-wide enrollees per semester (approved reports)." />
         {loading ? <Loading /> : trend.length === 0 ? <Empty>No approved enrollment reports yet.</Empty> : <SingleBars rows={trend} />}
+      </Card>
+
+      <Card>
+        <SectionTitle icon={Award} tone="orange" title="Departmental Achievements"
+          subtitle={`Approved achievements and board exam passers · ${num(achievements.length)} this academic year.`} />
+        {ach.loading ? <Loading /> : achievements.length === 0 ? <Empty>No approved achievements for this academic year yet.</Empty> : (
+          <>
+            <div className="ap-toolbar mb-4">
+              <SearchBox value={query} onChange={setQuery} placeholder="Search a name…" />
+              <Pills label="Achievement" options={moduleOptions} value={moduleId} onChange={setModuleId} />
+            </div>
+            {achievementRows.length === 0 ? <Empty>No names match this search.</Empty> : (
+              <div className="ap-table-wrap">
+                <table className="ap-table">
+                  <thead>
+                    <tr>{["Name", "School", "Achievement", "Details"].map((h) => <th key={h} className="py-3 px-4">{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {achievementRows.map((r) => (
+                      <tr key={r.id}>
+                        <td className="py-3 px-4 strong">{r.recipient_name}</td>
+                        <td className="py-3 px-4">{r.school?.code ?? "—"}</td>
+                        <td className="py-3 px-4">{r.module?.name ?? "—"}</td>
+                        <td className="py-3 px-4">{details(r)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
       </Card>
     </>
   );
