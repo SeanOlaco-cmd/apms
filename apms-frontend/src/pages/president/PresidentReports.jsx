@@ -4,7 +4,15 @@ import useApi from "../../lib/useApi";
 import { useAcademic } from "../../context/AcademicContext";
 import { VERDICTS, programChip } from "../../lib/academic";
 import { latestBy, num } from "../../lib/format";
+import { cellValue } from "../../lib/deptAchievements";
 import { Card, Empty, Loading, PageHeader, Pills, SectionTitle, Tile, TileGrid } from "../../components/ui";
+
+// "Level 3 · BSIT · 3rd Year": every filled field of the record except the name and notes.
+function details(record) {
+  const fields = (record.module?.fields ?? []).filter((f) => !["recipient_name", "notes"].includes(f.key));
+  const parts = fields.map((f) => cellValue(record, f)).filter((v) => v !== "—");
+  return parts.length ? parts.join(" · ") : "—";
+}
 
 // One department (school) at a time: enrollment, retention, faculty, achievements, class monitoring.
 export default function PresidentReports() {
@@ -85,14 +93,38 @@ export default function PresidentReports() {
       </Card>
 
       <Card>
-        <SectionTitle icon={Award} tone="orange" title="Departmental Achievements" />
+        <SectionTitle icon={Award} tone="orange" title="Departmental Achievements"
+          subtitle="Approved achievements and board exam passers of this department." />
         {schoolModules.length === 0 ? <Empty>No achievement module for this department.</Empty> : (
-          <TileGrid min="10rem">
-            {schoolModules.map((m) => (
-              <Tile key={m.id} icon={Award} tone="lavender" label={m.name}
-                value={num(achievements.filter((r) => r.module_id === m.id).length)} note="approved records" />
-            ))}
-          </TileGrid>
+          <>
+            <TileGrid min="10rem">
+              {schoolModules.map((m) => (
+                <Tile key={m.id} icon={Award} tone="lavender" label={m.name}
+                  value={num(achievements.filter((r) => r.module_id === m.id).length)} note="approved records" />
+              ))}
+            </TileGrid>
+            {achievements.length === 0 ? <p className="ap-hint mt-3">No approved names for this academic year yet.</p> : (
+              <div className="ap-table-wrap mt-4">
+                <table className="ap-table">
+                  <thead>
+                    <tr>{["Name", "Achievement", "Details"].map((h) => <th key={h} className="py-3 px-4">{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {[...achievements]
+                      .sort((x, y) => String(x.module?.name).localeCompare(String(y.module?.name))
+                        || String(x.recipient_name).localeCompare(String(y.recipient_name)))
+                      .map((r) => (
+                        <tr key={r.id}>
+                          <td className="py-3 px-4 strong">{r.recipient_name}</td>
+                          <td className="py-3 px-4">{r.module?.name ?? "—"}</td>
+                          <td className="py-3 px-4">{details(r)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </Card>
 
