@@ -16,17 +16,22 @@ export default function DHOverview() {
   const recs = useApi("/retention-records");
   const [query, setQuery] = useState("");
 
+    // Rejected reports don't count anywhere on the overview — they are sent
+  // back for correction, so their numbers aren't valid yet.
+  const valid = enr.data.filter((r) => r.status !== "rejected");
+
   // The latest semester's report inside the selected academic year.
-  const current = latestBy(enr.data.filter(inYear));
+  const current = latestBy(valid.filter(inYear));
   const previous = current
-    ? latestBy(enr.data.filter((r) => Number(r.academic_period_id) < Number(current.academic_period_id)))
+    ? latestBy(valid.filter((r) => Number(r.academic_period_id) < Number(current.academic_period_id)))
     : null;
   const growth = current && previous && Number(previous.total_enrolled) > 0
     ? Math.round(((current.total_enrolled - previous.total_enrolled) / previous.total_enrolled) * 100)
     : null;
   const total = Number(current?.total_enrolled ?? 0);
 
-  const records = recs.data.filter(inYear);
+    // Same rule for retention: skip records whose report was rejected.
+  const records = recs.data.filter((r) => inYear(r) && r.report?.status !== "rejected");
   const c = countTypes(records);
   const needle = query.trim().toLowerCase();
   const recent = [...records]
