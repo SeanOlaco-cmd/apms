@@ -83,11 +83,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:vpaa')->patch('/class-monitoring/{classMonitoring}', [ClassMonitoringController::class, 'update']);
     Route::middleware('role:vpaa')->delete('/class-monitoring/{classMonitoring}', [ClassMonitoringController::class, 'destroy']);
 
-    Route::middleware('role:vpaa')->get('/backups', [BackupController::class, 'index']);
-    Route::middleware('role:vpaa')->post('/backups', [BackupController::class, 'store']);
-    Route::middleware('role:vpaa')->get('/backups/{filename}/download', [BackupController::class, 'download']);
-    Route::middleware('role:vpaa')->post('/backups/{filename}/restore', [BackupController::class, 'restore']);
-    Route::middleware('role:vpaa')->delete('/backups/{filename}', [BackupController::class, 'destroy']);
+    // Backup & recovery: System Admin only.
+    Route::middleware('role:system_admin')->get('/backups', [BackupController::class, 'index']);
+    Route::middleware('role:system_admin')->post('/backups', [BackupController::class, 'store']);
+    Route::middleware('role:system_admin')->post('/backups/restore', [BackupController::class, 'restoreUpload']);
+    Route::middleware('role:system_admin')->get('/backups/{filename}/download', [BackupController::class, 'download']);
+    Route::middleware('role:system_admin')->post('/backups/{filename}/restore', [BackupController::class, 'restore']);
+    Route::middleware('role:system_admin')->delete('/backups/{filename}', [BackupController::class, 'destroy']);
 
 
     // Student cases (dropout/shift/transfer detail) — Dean of the

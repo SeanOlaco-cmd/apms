@@ -33,6 +33,7 @@ import VPAAClassMonitoring from './pages/vpaa/VPAAClassMonitoring'
 import SystemAdminDashboard from './pages/admin/SystemAdminDashboard'
 import SystemAdminUsers from './pages/admin/SystemAdminUsers'
 import AdminAcademicPeriods from './pages/admin/AdminAcademicPeriods'
+import SystemAdminBackup from './pages/admin/SystemAdminBackup'
 
 function App() {
   return (
@@ -96,6 +97,7 @@ function App() {
         <Route path="dashboard" element={<SystemAdminDashboard />} />
         <Route path="users" element={<SystemAdminUsers />} />
         <Route path="academic-periods" element={<AdminAcademicPeriods />} />
+        <Route path="backup" element={<SystemAdminBackup />} />
         <Route path="change-password" element={<ChangePassword />} />
       </Route>
 

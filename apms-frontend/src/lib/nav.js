@@ -1,5 +1,5 @@
 import {
-  Award, Briefcase, CalendarDays, ClipboardCheck, ClipboardList, LayoutDashboard, TrendingUp, UserMinus, Users,
+  Award, Briefcase, CalendarDays, ClipboardCheck, ClipboardList, Database, LayoutDashboard, TrendingUp, UserMinus, Users,
 } from "lucide-react";
 
 // A Dean whose school only has board-exam modules (SED, SAS) sees "Board Exams".
@@ -40,6 +40,7 @@ export function navFor(role, { modules = [] } = {}) {
         { label: "Overview", path: "/admin/dashboard", icon: LayoutDashboard },
         { label: "User Management", path: "/admin/users", icon: Users },
         { label: "Academic Periods", path: "/admin/academic-periods", icon: CalendarDays },
+        { label: "Backup & Recovery", path: "/admin/backup", icon: Database },
       ];
     default:
       return [];
